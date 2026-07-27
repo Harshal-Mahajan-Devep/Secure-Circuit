@@ -331,7 +331,7 @@ function Orders() {
                             textDecoration: "underline"
                           }}
                           onClick={() => handleOrderClick(order)}
-                          title="Click to view Cart details"
+                          title="Click to view Order Details"
                         >
                           {order.order_code}
                         </b>

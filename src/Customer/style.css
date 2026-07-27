@@ -456,7 +456,8 @@
 /* ===========================
    TIMELINE LINES FIX
 =========================== */
-.timeline-line {
+.timeline-line,
+.timeline-line-supp {
   position: absolute;
   left: 65px;
   top: 42px;
@@ -468,12 +469,15 @@
   z-index: 1;
 }
 
+.timeline-line-supp {
+ min-width: 1300px !important;
+}
+
 .timeline-progress-line {
   position: absolute;
   left: 65px;
   top: 42px;
   height: 4px;
-  /* --completed-percent पर्यंत तंतोतंत हिरवा आणि तिथून पुढे पिवळा */
   background: linear-gradient(
     90deg,
     #198754 0%,
