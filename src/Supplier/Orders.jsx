@@ -166,7 +166,6 @@ function Orders() {
               <thead>
                 <tr className="text-center">
                   <th>action</th>
-                  <th style={{ width: '280px' }}>Id's</th>
                   <th>Order Detail</th>
                   <th>Stag</th>
                   <th>Activity</th>
@@ -189,6 +188,7 @@ function Orders() {
                               getMessages(order.order_id);
                               markSupplierRead(order.order_id);
                             }}
+                              disabled={Number(order.order_stage) <= 7}
                           >
                             <i className="fa-regular fa-circle-question"></i>
                             {" "}
@@ -228,47 +228,6 @@ function Orders() {
                         >
                           {order.order_code}
                         </b>
-                      </td>
-                      <td className="text-start">
-                        <div className="d-flex flex-column gap-2">
-                          <div className="d-flex align-items-left justify-content-left gap-2">
-                            <span className="fw-semibold">Document:</span>
-
-                            {order.order_uploaded_requirement ? (
-                              <button
-                                className="btn btn-sm btn-primary"
-                                onClick={() =>
-                                  window.open(
-                                    `${BASE_URL}public/Uploads/${order.order_uploaded_requirement}`,
-                                  )
-                                }
-                              >
-                                <i className="bi bi-file-earmark-pdf me-1 text-light"></i>
-                                Open PDF
-                              </button>
-                            ) : (
-                              <span className="text-danger">N/A</span>
-                            )}
-                          </div>
-
-                          <div className="d-flex align-items-left justify-content-left gap-2">
-                            <span className="fw-semibold">Message:</span>
-
-                            <button
-                              className="btn btn-sm btn-outline-primary"
-                              onClick={() => {
-                                setSelectedDescription(
-                                  order.order_requirement_text ||
-                                  "No Description Available",
-                                );
-                                setShowDescriptionModal(true);
-                              }}
-                            >
-                              <i className="bi bi-chat-left-text me-1"></i>
-                              View Message
-                            </button>
-                          </div>
-                        </div>
                       </td>
 
                       <td className="text-center">

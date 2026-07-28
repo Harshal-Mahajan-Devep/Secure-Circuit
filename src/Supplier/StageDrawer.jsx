@@ -114,7 +114,7 @@ function StageDrawer({ open, onClose, order }) {
             <div className={`stage-drawer ${open ? "open" : ""}`}>
                 <div className="stage-header">
                     <div>
-                        <h4>STAGE TRACKING</h4>
+                        <h4>PRODUCT TRACKING</h4>
                         <small>Order #{order?.order_code || "N/A"}</small>
                     </div>
 

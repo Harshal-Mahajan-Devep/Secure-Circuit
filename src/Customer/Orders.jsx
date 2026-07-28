@@ -303,6 +303,7 @@ function Orders() {
                                 markCustomerRead(order.order_id);
                                 getMessages(order.order_id);
                               }}
+                              disabled={Number(order.order_stage) <= 7}
                             >
                               <i className="fa-regular fa-circle-question"></i> Query
                             </button>
@@ -577,8 +578,6 @@ function Orders() {
                   <div ref={messagesEndRef}></div>
                 </div>
 
-                {/* Bottom Input - Disabled if supplier hasn't responded */}
-                {/* Bottom Input - Disabled if supplier hasn't responded */}
                 <div className="chat-footer">
                   <input
                     type="text"

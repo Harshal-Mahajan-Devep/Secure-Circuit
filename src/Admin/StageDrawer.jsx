@@ -6,6 +6,7 @@ function StageDrawer({ open, onClose, order }) {
     const timelineRef = useRef(null);
     const activeItemRef = useRef(null);
     const [lineWidth, setLineWidth] = useState(0);
+    const admin = JSON.parse(localStorage.getItem("admin"));
 
     const [stages, setStages] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -20,7 +21,7 @@ function StageDrawer({ open, onClose, order }) {
         if (open) {
             setLoading(true);
             axios
-                .get(`${BASE_URL}customer/getdatawhere/tbl_stages/stage_for/6`)
+                .get(`${BASE_URL}customer/getdatawhere/tbl_stages/stage_for/${admin?.staff_role}`)
                 .then((res) => {
                     if (res.data && res.data.status) {
                         const sortedData = (res.data.data || []).sort(
@@ -68,7 +69,7 @@ function StageDrawer({ open, onClose, order }) {
                     const actCenter = rawStageId === 16
                         ? activeItem.offsetLeft + activeItem.offsetWidth
                         : activeItem.offsetLeft + activeItem.offsetWidth / 2;
-                    setActiveWidth(Math.max(0, actCenter - 72));
+                    setActiveWidth(Math.max(0, actCenter - 62));
 
                     activeItem.scrollIntoView({
                         behavior: "smooth",
@@ -175,13 +176,13 @@ function StageDrawer({ open, onClose, order }) {
                                 onMouseUp={handleMouseUp}
                                 onMouseMove={handleMouseMove}
                             >
-                                <div className="timeline-line"></div>
+                                <div className="timeline-line-admin"></div>
 
                                 <div
                                     className="timeline-progress-line"
                                     style={{
                                         width: `${activeWidth}px`,
-                                        backgroundColor: rawStageId === 16 ? "#28a745" : undefined, 
+                                        backgroundColor: rawStageId === 16 ? "#28a745" : undefined,
                                         "--completed-percent": rawStageId === 16
                                             ? "100%"
                                             : (activeWidth > 0 ? `${(completedWidth / activeWidth) * 100}%` : "0%")

@@ -299,25 +299,15 @@
 
 .stage-header {
   position: sticky;
-
   top: 0;
-
   z-index: 10;
-
-  background: linear-gradient(135deg, #0f766e, #03332f);
-
+  background: linear-gradient(135deg, #809b99, #05201e);
   color: #fff;
-
   display: flex;
-
   justify-content: space-between;
-
   align-items: center;
-
   padding: 7px 25px;
-
   border-radius: 10px 0 0 0;
-
   box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08);
 }
 
@@ -457,7 +447,8 @@
    TIMELINE LINES FIX
 =========================== */
 .timeline-line,
-.timeline-line-supp {
+.timeline-line-supp,
+.timeline-line-admin {
   position: absolute;
   left: 65px;
   top: 42px;
@@ -470,7 +461,11 @@
 }
 
 .timeline-line-supp {
- min-width: 1300px !important;
+  min-width: 1300px !important;
+}
+
+.timeline-line-admin {
+  min-width: 1950px !important;
 }
 
 .timeline-progress-line {
@@ -482,7 +477,7 @@
     90deg,
     #198754 0%,
     #198754 var(--completed-percent, 0%),
-    #ffc107 var(--completed-percent, 0%),
+    #036e27 var(--completed-percent, 0%),
     #ffc107 100%
   );
   border-radius: 50px;
