@@ -586,6 +586,8 @@
   width: 90px;
   height: 34px;
   border: 1px solid #d6d6d6;
+  background: #fff;
+  color: #000;
   border-radius: 4px;
   padding: 0 10px;
   outline: none;
@@ -852,6 +854,7 @@
   border: 1px solid #d8d8d8;
   border-radius: 3px;
   background: #fff;
+  color: #000;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1866,7 +1869,7 @@
 
 .pcb-preview-val {
   font-size: 13px;
-  color: #0f172a;
+  color: #05070e !important;
   font-weight: 700;
   display: flex;
   align-items: center;

@@ -9,12 +9,15 @@ import React, { useEffect, useRef, useState } from "react";
 import TableLoader from "../Config/TableLoader";
 import Select from "react-select";
 import StageDrawer from "./StageDrawer";
+import GlobalSearchInput from "../Config/GlobalSearchInput";
+import { UseGlobalSearch } from "../Config/UseGlobalSearch";
 
 function Orders() {
   const [orderData, setorderData] = useState([]);
   const [showDescriptionModal, setShowDescriptionModal] = useState(false);
   const [selectedDescription, setSelectedDescription] = useState("");
   const [showModal, setShowModal] = useState(false);
+  const { searchTerm, setSearchTerm, filteredData } = UseGlobalSearch(orderData);
 
   // Query Modal States
   const [showQueryModal, setShowQueryModal] = useState(false);
@@ -263,12 +266,32 @@ function Orders() {
           </div>
         </div>
 
+
         <section className="panel">
-          <div className="panel-header d-flex flex-wrap align-items-center justify-content-end gap-2">
-            <Link to="/cart" className="btn btn-outline-success">
-              <i className="bi bi-plus"></i> Add{" "}
-            </Link>
+          <div className="row mb-3">
+            <div className="col-md-3">
+              {/* <input type="text" className="filter-input" placeholder="Search orders..." /> */}
+            </div>
+            <div className="col-md-3">
+              {/* <input type="text" className="filter-input" placeholder="Search orders..." /> */}
+            </div>
+            <div className="col-md-1">
+              {/* <input type="text" className="filter-input" placeholder="Search orders..." /> */}
+            </div>
+            <div className="col-md-3 text-end">
+              <GlobalSearchInput
+                value={searchTerm}
+                onChange={(text) => setSearchTerm(text)}
+                placeholder="Search Orders . . . . ."
+              />
+            </div>
+            <div className="col-md-2 text-center">
+              <Link to="/cart" className="btn btn-outline-success">
+                <i className="bi bi-plus"></i> Add{" "}
+              </Link>
+            </div>
           </div>
+
           <div className="table-responsive">
             <table
               className="table align-middle mb-0"
@@ -287,7 +310,7 @@ function Orders() {
                 {loading ? (
                   <TableLoader rows={6} columns={5} />
                 ) : orderData.length > 0 ? (
-                  orderData.map((order) => (
+                  filteredData.map((order) => (
                     <tr key={order.order_id}>
                       <td className="text-center fw-semibold">
                         <div className="position-relative d-inline-block">

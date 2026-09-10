@@ -6,12 +6,18 @@ import React, { useEffect, useRef, useState } from "react";
 import TableLoader from "../Config/TableLoader";
 import * as bootstrap from "bootstrap";
 import StageDrawer from "./StageDrawer";
+import GlobalSearchInput from "../Config/GlobalSearchInput";
+import { UseGlobalSearch } from "../Config/UseGlobalSearch";
+import * as Yup from "yup";
+import { useFormik } from "formik";
 
 function Orders() {
   const admin = JSON.parse(localStorage.getItem("admin"));
   const adminrole = admin?.staff_role;
 
   const [orderData, setorderData] = useState([]);
+  const { searchTerm, setSearchTerm, filteredData } = UseGlobalSearch(orderData);
+
   const [showDelete, setShowDelete] = useState(false);
   const [deleteId, setDeleteId] = useState(null);
   const [showSupplierModal, setShowSupplierModal] = useState(false);
@@ -26,20 +32,117 @@ function Orders() {
   const [messages, setMessages] = useState([]);
   const [message, setMessage] = useState("");
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [showModal, setShowModal] = useState(false);
   const [editMessageId, setEditMessageId] = useState(null);
   const messagesEndRef = useRef(null);
   const [showStageDrawer, setShowStageDrawer] = useState(false);
 
-  // Expanded Row आणि Cart Data Fetching साठी States
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [cartDetails, setCartDetails] = useState([]);
   const [detailLoading, setDetailLoading] = useState(false);
 
-  // order_cart_id वरून Cart/Product चा डेटा API मधून फेच करणे
+  const [quotations, setQuotations] = useState([]);
+  const [showQuotationModal, setShowQuotationModal] = useState(false);
+  const [quotationLoading, setQuotationLoading] = useState(false);
+
+  // Quote States
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+
+  // Formik validation for Order Quotation Update
+  const formik = useFormik({
+    initialValues: {
+      order_quotation: "",
+      order_remark: "",
+    },
+    enableReinitialize: true,
+    validationSchema: Yup.object({
+      order_quotation: Yup.string().required("Quotation file is required"),
+      order_remark: Yup.string().required("Remark is required"),
+    }),
+    onSubmit: async (values) => {
+      try {
+        const payload = {
+          order_id: selectedOrder?.order_id,
+          order_quotation: values.order_quotation,
+          order_remark: values.order_remark,
+          order_stage: "6",
+        };
+
+        const res = await axios.post(
+          `${BASE_URL}admin/updatedata/tbl_orders/order_id/${selectedOrder?.order_id}`,
+          payload
+        );
+
+        if (res.data.status) {
+          toast.success("Quote Sent successfully!");
+          resetForm();
+          getorderData();
+        } else {
+          toast.error(res.data.message || "Failed to update quote");
+        }
+      } catch (error) {
+        console.error("Quote Submission Error:", error);
+        toast.error("Something went wrong!");
+      }
+    },
+  });
+
+  const handleOpenQuoteModal = (order) => {
+    setSelectedOrder(order);
+    setShowModal(true);
+    formik.setValues({
+      order_quotation: order.order_quotation || "",
+      order_remark: order.order_remark || "",
+    });
+  };
+
+  const uploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const res = await axios.post(`${BASE_URL}admin/fileupload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      });
+
+      if (res.data.status && res.data.files) {
+        const fileName = Object.values(res.data.files)[0];
+        formik.setFieldValue("order_quotation", fileName);
+        toast.success("File uploaded successfully");
+      } else {
+        toast.error(res.data.message || "File upload failed");
+      }
+    } catch (err) {
+      console.error("Upload Error:", err);
+      toast.error("Error uploading file");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const resetForm = () => {
+    formik.resetForm();
+    setShowModal(false);
+    setSelectedOrder(null);
+    setUploadProgress(0);
+  };
+
   const fetchCartDetails = async (cartId) => {
     setDetailLoading(true);
     try {
-      // इथे तुमच्या बॅकएंड API नुसार URL सेट केले आहे (tbl_cart मधील cart_id वरून डेटा आणण्यासाठी)
       const response = await axios.get(
         `${BASE_URL}admin/getdatawhere/tbl_cart/cart_id/${cartId}`
       );
@@ -61,7 +164,6 @@ function Orders() {
     }
   };
 
-  // Toggle Row आणि Click झाल्यावर API कॉल करणे
   const toggleExpandRow = (order) => {
     if (expandedOrderId === order.order_id) {
       setExpandedOrderId(null);
@@ -69,19 +171,16 @@ function Orders() {
     } else {
       setExpandedOrderId(order.order_id);
 
-      // order ऑब्जेक्ट मधून cart id मिळवणे
       const cartId = order.order_cart_id || order.cart_id;
 
       if (cartId) {
         fetchCartDetails(cartId);
       } else {
-        // जर थेट ऑर्डर्समध्येच डेटा असेल तर फॉलबॅक
         setCartDetails([order]);
       }
     }
   };
 
-  // Initialize Bootstrap popovers whenever orderData changes
   useEffect(() => {
     const popoverTriggerList = document.querySelectorAll(
       '[data-bs-toggle="popover"]'
@@ -92,7 +191,6 @@ function Orders() {
     });
   }, [orderData]);
 
-  // Fetch Suppliers Data
   const getSupplierData = async () => {
     try {
       const response = await axios.get(
@@ -113,7 +211,6 @@ function Orders() {
     getCustomerData();
   }, []);
 
-  // Auto-scroll chat area to bottom when messages update or query modal opens
   useEffect(() => {
     if (showQueryModal) {
       setTimeout(() => {
@@ -124,7 +221,6 @@ function Orders() {
     }
   }, [messages, showQueryModal]);
 
-  // Fetch messages for selected order query
   const getMessages = async (orderId) => {
     try {
       const res = await axios.get(
@@ -139,43 +235,31 @@ function Orders() {
     }
   };
 
-  // Send or update chat message
   const sendMessage = async () => {
     if (message.trim() === "") return;
 
+    if (!editMessageId) {
+      toast.error("Please select a message to edit.");
+      return;
+    }
+
     try {
-      if (editMessageId) {
-        await axios.post(
-          `${BASE_URL}admin/updatedata/tbl_query/que_id/${editMessageId}`,
-          {
-            que_edit_message: message,
-          }
-        );
+      await axios.post(
+        `${BASE_URL}admin/updatedata/tbl_query/que_id/${editMessageId}`,
+        {
+          que_edit_message: message,
+        }
+      );
 
-        toast.success("Message Updated");
-        setEditMessageId(null);
-      } else {
-        await axios.post(`${BASE_URL}admin/insert/tbl_query`, {
-          que_order_id: selectedOrder.order_id,
-          que_cust_id: selectedOrder.order_cust_id,
-          que_send: "admin",
-          que_message: message,
-          que_admin_read: 1,
-          que_cust_read: 0,
-          que_supp_read: 0,
-        });
-
-        toast.success("Message Sent");
-      }
-
+      toast.success("Message Updated");
+      setEditMessageId(null);
       setMessage("");
       getMessages(selectedOrder.order_id);
     } catch (err) {
-      toast.error("Failed");
+      toast.error("Update Failed");
     }
   };
 
-  // Toggle query message status
   const changeStatus = async (id, status) => {
     try {
       const res = await axios.post(
@@ -194,13 +278,11 @@ function Orders() {
     }
   };
 
-  // Prepare message for editing
   const editMessage = (msg) => {
     setEditMessageId(msg.que_id);
-    setMessage(msg.que_message);
+    setMessage(msg.que_edit_message || msg.que_message);
   };
 
-  // Fetch Customer list
   const getCustomerData = async () => {
     try {
       const response = await axios.get(
@@ -215,7 +297,6 @@ function Orders() {
     }
   };
 
-  // Fetch all orders
   const getorderData = async () => {
     setLoading(true);
 
@@ -232,7 +313,6 @@ function Orders() {
     }
   };
 
-  // Mark order query as read by admin
   const markAdminRead = async (orderId) => {
     try {
       await axios.post(`${BASE_URL}admin/markAdminRead`, {
@@ -245,7 +325,6 @@ function Orders() {
     }
   };
 
-  // Delete Order
   const confirmDelete = async () => {
     try {
       const response = await axios.get(
@@ -265,7 +344,6 @@ function Orders() {
     }
   };
 
-  // Toggle supplier selection
   const handleSupplierSelect = (id) => {
     if (selectedSuppliers.includes(id)) {
       setSelectedSuppliers(selectedSuppliers.filter((item) => item !== id));
@@ -274,7 +352,6 @@ function Orders() {
     }
   };
 
-  // Save selected suppliers for order
   const saveSuppliers = async () => {
     try {
       const response = await axios.post(
@@ -298,6 +375,30 @@ function Orders() {
     }
   };
 
+  const getQuotations = async (order) => {
+    setSelectedOrder(order);
+    setShowQuotationModal(true);
+    setQuotationLoading(true);
+
+    try {
+      const res = await axios.get(
+        `${BASE_URL}admin/getdatawhere/tbl_supplier_quotes/sq_order_id/${order.order_id}`
+      );
+
+      if (res.data.status) {
+        setQuotations(Array.isArray(res.data.data) ? res.data.data : [res.data.data]);
+      } else {
+        setQuotations([]);
+      }
+    } catch (err) {
+      console.log("Quotation Fetch Error:", err);
+      toast.error("Failed to fetch quotations");
+      setQuotations([]);
+    } finally {
+      setQuotationLoading(false);
+    }
+  };
+
   return (
     <>
       <div className="container-fluid px-3 px-lg-4 py-4">
@@ -314,6 +415,18 @@ function Orders() {
         </div>
 
         <section className="panel">
+          <div className="row mb-3">
+            <div className="col-md-3"></div>
+            <div className="col-md-3"></div>
+            <div className="col-md-4"></div>
+            <div className="col-md-2">
+              <GlobalSearchInput
+                value={searchTerm}
+                onChange={(text) => setSearchTerm(text)}
+                placeholder="Search Orders . . . . ."
+              />
+            </div>
+          </div>
           <div className="table-responsive">
             <table
               className="table align-middle mb-0"
@@ -332,7 +445,7 @@ function Orders() {
                 {loading ? (
                   <TableLoader rows={6} columns={4} />
                 ) : orderData.length > 0 ? (
-                  orderData.map((order) => {
+                  filteredData.map((order) => {
                     const isExpanded = expandedOrderId === order.order_id;
 
                     return (
@@ -357,42 +470,57 @@ function Orders() {
                                 <i className="bi bi-building me-1"></i>
                                 RFQ
                               </button>
-                            </div>
 
-                            <div className="d-flex align-items-center justify-content-center gap-2 mt-2">
                               <div className="position-relative d-inline-block">
-                                <button
-                                  className="btn btn-sm btn-outline-danger"
-                                  onClick={() => {
-                                    setSelectedOrder(order);
-                                    setShowQueryModal(true);
-                                    getMessages(order.order_id);
-                                    markAdminRead(order.order_id);
-                                  }}
-                                  disabled={Number(order.order_stage) <= 7}
+                                <span
+                                  className="d-inline-block"
+                                  tabIndex="0"
+                                  title={
+                                    Number(order.order_stage) <= 7
+                                      ? "Query option is not available until assigned."
+                                      : ""
+                                  }
                                 >
-                                  <i className="fa-regular fa-circle-question"></i>
-                                  Query
-                                </button>
-
-                                {parseInt(order.unread_count) > 0 && (
-                                  <span
-                                    className="position-absolute rounded-circle bg-danger"
-                                    style={{
-                                      width: "12px",
-                                      height: "12px",
-                                      right: "-2px",
-                                      top: "-2px",
-                                      zIndex: 9999,
+                                  <button
+                                    className="btn btn-sm btn-outline-danger"
+                                    onClick={() => {
+                                      setSelectedOrder(order);
+                                      setShowQueryModal(true);
+                                      getMessages(order.order_id);
+                                      markAdminRead(order.order_id);
                                     }}
-                                  />
-                                )}
+                                    disabled={Number(order.order_stage) <= 7}
+                                  >
+                                    <i className="fa-regular fa-circle-question"></i>
+                                    Query
+                                  </button>
+
+                                  {parseInt(order.unread_count) > 0 && (
+                                    <span
+                                      className="position-absolute rounded-circle bg-danger"
+                                      style={{
+                                        width: "12px",
+                                        height: "12px",
+                                        right: "-2px",
+                                        top: "-2px",
+                                        zIndex: 9999,
+                                      }}
+                                    />
+                                  )}
+                                </span>
                               </div>
                             </div>
+
+                            <button
+                              className="btn btn-sm btn-outline-danger mt-2"
+                              onClick={() => handleOpenQuoteModal(order)}
+                            >
+                              <i className={`fa-solid ${order.order_quotation ? "fa-pen-to-square" : "fa-upload"} me-1`}></i>
+                              {order.order_quotation ? "Edit Quote" : "Upload Quote"}
+                            </button>
                           </td>
 
                           <td>
-                            {/* Order Number आणि त्याच्या पुढे circular + / - Icon */}
                             <div className="d-flex align-items-center gap-2 mb-1">
                               <div className="dropdown">
                                 <span className="fw-semibold">Order No:</span>{" "}
@@ -420,7 +548,6 @@ function Orders() {
                                 </ul>
                               </div>
 
-                              {/* Circular + / - Button */}
                               <button
                                 className={`btn btn-sm rounded-circle ${isExpanded ? "btn-danger" : "btn-outline-danger"
                                   }`}
@@ -464,6 +591,27 @@ function Orders() {
                                 {order.cust_code}
                               </span>
                             </div>
+                            <span className="fw-semibold">Received Quote:</span>{" "}
+                            <span
+                              className="text-primary fw-bold"
+                              style={{ cursor: "pointer", fontSize: "16px" }}
+                              onClick={() => getQuotations(order)}
+                            >
+                              Received Supplier Quotations
+                            </span> <br />
+                            <span className="fw-semibold">Sended Quote:</span>{" "}
+                            {order.order_quotation ? (
+                              <a
+                                href={`${BASE_URL}public/Uploads/${order.order_quotation}`}
+                                className="text-danger fw-bold text-decoration-none"
+                                style={{ cursor: "pointer", fontSize: "16px" }}
+                                target="_blank"
+                              >
+                                Sended Customer Quotations
+                              </a>
+                            ) : (
+                              <span className="text-danger fw-bold">No Sended Quote</span>
+                            )}
                           </td>
 
                           {["1", "2", "3"].includes(adminrole) && (
@@ -502,18 +650,16 @@ function Orders() {
                               colSpan={["1", "2", "3"].includes(adminrole) ? 4 : 3}
                               className="bg-light p-2"
                             >
-                              {/* Custom Isolated Scroll Container */}
                               <div
                                 className="custom-expanded-scroll"
                                 style={{
-                                  width: "970px",
+                                  width: "972px",
                                   overflowX: "auto",
                                   overflowY: "hidden",
                                   whiteSpace: "nowrap",
                                   cursor: "grab",
-                                  scrollbarWidth: "none", /* Firefox */
-                                  msOverflowStyle: "none", /* IE/Edge */
-                                  /* टेक्स्ट सिलेक्ट होऊ नये म्हणून (Disable Text Selection) */
+                                  scrollbarWidth: "none",
+                                  msOverflowStyle: "none",
                                   userSelect: "none",
                                   WebkitUserSelect: "none",
                                   MozUserSelect: "none",
@@ -574,113 +720,88 @@ function Orders() {
                                     <tbody>
                                       {cartDetails.map((item, index) => (
                                         <tr key={index}>
-                                          <td
-                                            title="Base Material"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_base_material || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Part Name</div>
+                                            <div>{item.gerber_original_name || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Layer"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_pcb_layer || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Base Material</div>
+                                            <div>{item.cart_base_material || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Width x Height"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_pcb_width && item.cart_pcb_height
-                                              ? `${item.cart_pcb_width} x ${item.cart_pcb_height}`
-                                              : "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Layer</div>
+                                            <div>{item.cart_pcb_layer || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Qty"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_selected_qty || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Width x Height</div>
+                                            <div>
+                                              {item.cart_pcb_width && item.cart_pcb_height
+                                                ? `${item.cart_pcb_width} x ${item.cart_pcb_height}`
+                                                : "N/A"}
+                                            </div>
                                           </td>
 
-                                          <td
-                                            title="Product Type"
-                                            className="fw-semibold text-start"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_product_type || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Qty</div>
+                                            <div>{item.cart_selected_qty || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Thickness"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_pcb_thickness || "N/A"}
+                                          <td className="text-start" style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Product Type</div>
+                                            <div className="fw-semibold">{item.cart_product_type || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Color"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_pcb_color || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Thickness</div>
+                                            <div>{item.cart_pcb_thickness || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Silkscreen"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_silkscreen || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Color</div>
+                                            <div>{item.cart_pcb_color || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Material Type"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_material_type || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Silkscreen</div>
+                                            <div>{item.cart_silkscreen || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Surface Finish"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_surface_finish || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Material Type</div>
+                                            <div>{item.cart_material_type || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Outer Copper"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_outer_copper_weight || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Surface Finish</div>
+                                            <div>{item.cart_surface_finish || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Via Covering"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_via_covering || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Outer Copper</div>
+                                            <div>{item.cart_outer_copper_weight || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Min Via Hole"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_min_via_hole || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Via Covering</div>
+                                            <div>{item.cart_via_covering || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Electrical Test"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_electrical_test || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Min Via Hole</div>
+                                            <div>{item.cart_min_via_hole || "N/A"}</div>
                                           </td>
 
-                                          <td
-                                            title="Remark"
-                                            className="text-start"
-                                            style={{ whiteSpace: "nowrap", padding: "8px 12px" }}
-                                          >
-                                            {item.cart_pcb_remark || "N/A"}
+                                          <td style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Electrical Test</div>
+                                            <div>{item.cart_electrical_test || "N/A"}</div>
+                                          </td>
+
+                                          <td className="text-start" style={{ whiteSpace: "nowrap", padding: "8px 12px" }}>
+                                            <div style={{ fontSize: "11px", color: "#6c757d", fontWeight: "bold" }}>Remark</div>
+                                            <div>{item.cart_pcb_remark || "N/A"}</div>
                                           </td>
                                         </tr>
                                       ))}
@@ -848,15 +969,17 @@ function Orders() {
                             </button>
 
                             <ul className="dropdown-menu">
-                              <li>
-                                <button
-                                  className="dropdown-item"
-                                  onClick={() => editMessage(msg)}
-                                >
-                                  <i className="fa-solid fa-pen me-2"></i>
-                                  Edit
-                                </button>
-                              </li>
+                              {(msg.que_send === "customer" || msg.que_send === "supplier") && (
+                                <li>
+                                  <button
+                                    className="dropdown-item"
+                                    onClick={() => editMessage(msg)}
+                                  >
+                                    <i className="fa-solid fa-pen me-2"></i>
+                                    Edit
+                                  </button>
+                                </li>
+                              )}
 
                               {msg.que_status === 0 ? (
                                 <li>
@@ -946,21 +1069,22 @@ function Orders() {
                   <input
                     type="text"
                     className="chat-input"
+                    disabled={!editMessageId}
                     placeholder={
                       editMessageId
                         ? "Edit message..."
-                        : "Type a message..."
+                        : "Click 'Edit' on a message to make changes..."
                     }
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                   />
 
-                  <button className="chat-send-btn" onClick={sendMessage}>
-                    {editMessageId ? (
-                      <i className="fa-solid fa-floppy-disk"></i>
-                    ) : (
-                      <i className="fa-solid fa-paper-plane"></i>
-                    )}
+                  <button
+                    className="chat-send-btn"
+                    onClick={sendMessage}
+                    disabled={!editMessageId}
+                  >
+                    <i className="fa-solid fa-floppy-disk"></i>
                   </button>
                 </div>
               </div>
@@ -1000,6 +1124,221 @@ function Orders() {
                   }}
                 />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Quotation Modal */}
+      {showQuotationModal && (
+        <div className="model-add-edit-modal-overlay">
+          <div
+            className="model-add-edit-modal-dialog"
+            style={{ maxWidth: "800px" }}
+          >
+            <div className="model-add-edit-modal-content">
+              <div className="model-add-edit-modal-header">
+                <h5 className="model-add-edit-modal-title">
+                  <i className="bi bi-file-earmark-text me-2"></i>
+                  Quotations Details - Order No: {selectedOrder?.order_code}
+                </h5>
+
+                <button
+                  type="button"
+                  className="model-add-edit-modal-close"
+                  onClick={() => {
+                    setShowQuotationModal(false);
+                    setQuotations([]);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <div className="model-add-edit-modal-body p-3">
+                {quotationLoading ? (
+                  <div className="text-center py-4">
+                    <div
+                      className="spinner-border text-danger"
+                      role="status"
+                    ></div>
+                    <p className="mt-2 mb-0">Fetching Quotations...</p>
+                  </div>
+                ) : quotations.length > 0 ? (
+                  <div className="table-responsive">
+                    <table className="table table-bordered table-striped align-middle text-center mb-0">
+                      <thead className="table-light">
+                        <tr>
+                          <th>Supplier ID / Name</th>
+                          <th>Quotation</th>
+                          <th>Remark / Notes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {quotations.map((quote, index) => (
+                          <tr key={quote.sq_id}>
+                            <td className="text-start">
+                              <span className="fw-semibold">Supplier Code:</span>{" "} {quote.supp_code || "N/A"} <br />
+                              <span className="fw-semibold">Supplier Person:</span>{" "}{quote.supp_contact_person || "N/A"} <br />
+                              <span className="fw-semibold">Company Name:</span>{" "} {quote.supp_company_name || "N/A"}
+                            </td>
+                            <td>
+                              <a
+                                href={`${BASE_URL}public/Uploads/${quote.sq_quote}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-outline-danger"
+                              >
+                                View Quotation
+                              </a>
+                            </td>
+                            <td>{quote.sq_remark || "No Remarks"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-4 text-danger fw-bold">
+                    <i className="bi bi-exclamation-circle fs-3 d-block mb-2"></i>
+                    No Quotations Found For This Order.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Quote Modal */}
+      {showModal && (
+        <div className="model-add-edit-modal-overlay">
+          <div className="model-add-edit-modal-dialog model-size-sm">
+            <div className="model-add-edit-modal-content">
+              <div className="model-add-edit-modal-header">
+                <h5 className="model-add-edit-modal-title">
+                  {selectedOrder?.order_code}
+                </h5>
+
+                <button
+                  type="button"
+                  className="model-add-edit-modal-close"
+                  onClick={resetForm}
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={formik.handleSubmit}>
+                <div className="model-add-edit-modal-body">
+                  <div className="row g-3">
+                    <div className="col-md-12">
+                      <div className="simple-file-box">
+                        <label className="simple-file-label">
+                          Upload PDF / ZIP <span className="text-danger">*</span>
+                        </label>
+
+                        <div
+                          className={`simple-input-container ${formik.touched.order_quotation && formik.errors.order_quotation
+                            ? "is-invalid-border"
+                            : ""
+                            }`}
+                        >
+                          <input
+                            type="file"
+                            id="order_quotation"
+                            name="order_quotation"
+                            className="simple-file-input"
+                            accept=".pdf,.zip,application/pdf,application/zip,application/x-zip-compressed"
+                            onChange={(e) => {
+                              formik.setFieldTouched("order_quotation", true);
+                              uploadImage(e);
+                            }}
+                          />
+                        </div>
+
+                        {formik.values.order_quotation && (
+                          <div className="d-flex align-items-center justify-content-between mt-2 p-2 bg-light rounded border">
+                            <div className="small text-truncate me-2">
+                              <strong>File:</strong> {formik.values.order_quotation}
+                            </div>
+                            <a
+                              href={`${BASE_URL}public/Uploads/${formik.values.order_quotation}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="btn btn-sm btn-outline-danger text-nowrap"
+                            >
+                              <i className="fa-solid fa-eye me-1"></i> View Quote
+                            </a>
+                          </div>
+                        )}
+
+                        {formik.touched.order_quotation && formik.errors.order_quotation && (
+                          <div className="simple-error-text">
+                            {formik.errors.order_quotation}
+                          </div>
+                        )}
+
+                        {uploading && (
+                          <div className="simple-progress-wrapper mt-2">
+                            <div className="simple-progress-info mb-1">
+                              <span>Uploading...</span>
+                              <span>{uploadProgress}%</span>
+                            </div>
+                            <div className="simple-progress-bar">
+                              <div
+                                className="simple-progress-fill"
+                                style={{ width: `${uploadProgress}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="col-md-12">
+                      <label className="order-form-label mt-3">
+                        Requirement / Remark <span className="text-danger">*</span>
+                      </label>
+
+                      <textarea
+                        rows={4}
+                        name="order_remark"
+                        placeholder="Enter requirement or remark..."
+                        className={`order-textarea ${formik.touched.order_remark && formik.errors.order_remark
+                          ? "is-invalid"
+                          : ""
+                          }`}
+                        value={formik.values.order_remark}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                      />
+
+                      <div className="invalid-feedback d-block">
+                        {formik.touched.order_remark && formik.errors.order_remark}
+                      </div>
+                    </div>
+
+                    <div className="model-add-edit-modal-footer d-flex justify-content-between mt-4">
+                      <button
+                        type="button"
+                        className="model-add-edit-btn model-add-edit-btn-cancel"
+                        onClick={resetForm}
+                      >
+                        Close
+                      </button>
+
+                      <button
+                        type="submit"
+                        className="model-add-edit-btn model-add-edit-btn-save"
+                        disabled={uploading}
+                      >
+                        {uploading ? "Uploading..." : "Save Quote"}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
             </div>
           </div>
         </div>

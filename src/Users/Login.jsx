@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
+import ReCAPTCHA from "react-google-recaptcha";
 import { BASE_URL } from "../Config/Base-url";
 import logo from "../../public/assets/images/secure-circuit-logo.png";
 import toast from "react-hot-toast";
@@ -11,6 +12,11 @@ function Login() {
   const [activeTab, setActiveTab] = useState("login");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // CAPTCHA States & Ref
+  const [captchaToken, setCaptchaToken] = useState(null);
+  const [isVerifyingCaptcha, setIsVerifyingCaptcha] = useState(false);
+  const recaptchaRef = useRef(null);
 
   // Auto Redirection if Logged In
   const customer = JSON.parse(localStorage.getItem("customer"));
@@ -45,7 +51,7 @@ function Login() {
           order_stage: 2
         };
 
-        const response = await axios.post(`${BASE_URL}customer/insert/tbl_orders`, payload);
+        const response = await axios.post(`${BASE_URL}customer/insertmultiple/tbl_orders`, payload);
 
         if (response.data && response.data.status) {
           localStorage.removeItem("pending_order_cart_ids");
@@ -62,7 +68,7 @@ function Login() {
     navigate("/customer/dashboard");
   };
 
-  // 1. Submit Login
+  // 1. Submit Login Updated
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!formData.cust_email || !formData.cust_password) {
@@ -81,7 +87,12 @@ function Login() {
         localStorage.setItem("customer", JSON.stringify(res.data.customer));
         await handlePendingOrderInsertion(res.data.customer);
       } else {
-        toast.error(res.data.message || "Invalid credentials.");
+        if (res.data.is_unverified) {
+          toast.error(res.data.message);
+          navigate("/verify-email", { state: { email: res.data.email } });
+        } else {
+          toast.error(res.data.message || "Invalid credentials.");
+        }
       }
     } catch (err) {
       toast.error("Server connection failed.");
@@ -90,7 +101,51 @@ function Login() {
     }
   };
 
-  // 2. Submit Register
+  // Checkbox Click Handle
+  const handleCheckboxClick = (e) => {
+    const isChecked = e.target.checked;
+
+    if (isChecked) {
+      setIsVerifyingCaptcha(true);
+      setTimeout(() => {
+        if (recaptchaRef.current) {
+          recaptchaRef.current.execute();
+        } else {
+          setIsVerifyingCaptcha(false);
+        }
+      }, 100);
+    } else {
+      setCaptchaToken(null);
+      if (recaptchaRef.current) {
+        recaptchaRef.current.reset();
+      }
+    }
+  };
+
+  // CAPTCHA Success Callback
+  const handleCaptchaVerify = (token) => {
+    if (token) {
+      setCaptchaToken(token);
+      setIsVerifyingCaptcha(false);
+      toast.success("Verified!");
+    } else {
+      setIsVerifyingCaptcha(false);
+    }
+  };
+
+  // CAPTCHA Error Callback
+  const handleCaptchaError = () => {
+    toast.error("CAPTCHA error. Please try again.");
+    setIsVerifyingCaptcha(false);
+  };
+
+  // CAPTCHA Expired Callback
+  const handleCaptchaExpired = () => {
+    setCaptchaToken(null);
+    setIsVerifyingCaptcha(false);
+  };
+
+  // 2. Submit Register Updated
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!formData.cust_contact_person || !formData.cust_email || !formData.cust_password) {
@@ -98,14 +153,21 @@ function Login() {
       return;
     }
 
+    if (!captchaToken) {
+      toast.error("Please verify that you are not a robot.");
+      return;
+    }
+
     try {
       setLoading(true);
-      const res = await axios.post(`${BASE_URL}customer/register`, formData);
+      const res = await axios.post(`${BASE_URL}customer/register`, {
+        ...formData,
+        captcha_token: captchaToken
+      });
 
       if (res.data.status) {
-        toast.success("Account created! You can now login.");
-        localStorage.setItem("customer", JSON.stringify(res.data.customer));
-        await handlePendingOrderInsertion(res.data.customer);
+        toast.success("Account created! Please verify your email.");
+        navigate("/verify-email", { state: { email: formData.cust_email } });
       } else {
         toast.error(res.data.message || "Registration failed.");
       }
@@ -137,7 +199,7 @@ function Login() {
         toast.error(res.data.message || "Email not registered.");
       }
     } catch (err) {
-      toast.error("Something went wrong.");
+      toast.error("Something wrong.");
     } finally {
       setLoading(false);
     }
@@ -148,7 +210,6 @@ function Login() {
       <div className="px-auth-card">
         {/* Header Branding */}
         <div className="px-auth-brand">
-          {/* <img src={logo} alt="Brand Logo" className="px-auth-logo" /> */}
           <p className="px-auth-desc">
             {activeTab === "login" && "Access your account and manage orders"}
             {activeTab === "register" && "Join us to simplify your PCB ordering"}
@@ -271,7 +332,69 @@ function Login() {
                 />
               </div>
 
-              <button type="submit" className="px-submit-btn" disabled={loading}>
+              <div className="px-field-group" style={{ marginTop: "15px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {/* Label मध्येच Input टाकल्याने Click कार्य करेल */}
+                  <label
+                    htmlFor="robotCheckbox"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      cursor: "pointer",
+                      margin: 0,
+                      color: "#d93025",
+                      userSelect: "none"
+                    }}
+                  >
+                    {/* Hidden Native Checkbox */}
+                    <input
+                      type="checkbox"
+                      id="robotCheckbox"
+                      checked={!!captchaToken}
+                      onChange={handleCheckboxClick}
+                      disabled={isVerifyingCaptcha}
+                      style={{ display: "none" }} // Native checkbox लपवला
+                    />
+
+                    {/* Custom UI Box */}
+                    <span
+                      style={{
+                        width: "18px",
+                        height: "18px",
+                        backgroundColor: "#ffffff", // Pure White Background
+                        border: "1px solid #ccc",
+                        borderRadius: "3px",
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
+                        fontSize: "16px",
+                        fontWeight: "bold",
+                        color: "#25ce03"
+                      }}
+                    >
+                      {!!captchaToken && "✓"} {/* Tick Mark */}
+                    </span>
+
+                    {isVerifyingCaptcha ? "Verifying..." : "I am not a robot"}
+                  </label>
+                </div>
+
+                {/* Hidden Google reCAPTCHA Component */}
+                <div style={{ display: "none" }}>
+                  <ReCAPTCHA
+                    ref={recaptchaRef}
+                    size="invisible"
+                    sitekey="6LfZfG0tAAAAAAUZRaOz0hCHN4UF0xabjk9hX-n8"
+                    onChange={handleCaptchaVerify}
+                    onErrored={handleCaptchaError}
+                    onExpired={handleCaptchaExpired}
+                  />
+                </div>
+              </div>
+
+              <button type="submit" className="px-submit-btn" disabled={loading || isVerifyingCaptcha}>
                 {loading ? <><span className="px-spinner"></span> CREATING...</> : "CREATE ACCOUNT"}
               </button>
             </form>

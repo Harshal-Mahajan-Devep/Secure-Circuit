@@ -9,7 +9,6 @@ body {
 }
 
 /* Top Strip */
-
 .top-strip {
   background: #e10d1b;
   color: #fff;
@@ -428,7 +427,7 @@ body {
   position: absolute;
   inset: 0;
   background: url("../../public/assets/images/Home-banner.jpeg") center/cover
-    no-repeat;
+    no-repeat !important;
   /* filter: blur(1px); 
   transform: scale(1.08);  */
   z-index: -2;
@@ -1930,7 +1929,7 @@ body {
 
   .hero-section {
     padding: 40px 0;
-    background: url("../../public/assets/images/hero-banner-mobile.png");
+    background: url("../../public/assets/images/hero-banner-mobile.png") !important;
     background-size: cover;
     background-position: center;
     min-height: 650px;

@@ -68,7 +68,7 @@ function StageDrawer({ open, onClose, order }) {
                     const actCenter = rawStageId === 16
                         ? activeItem.offsetLeft + activeItem.offsetWidth
                         : activeItem.offsetLeft + activeItem.offsetWidth / 2;
-                    setActiveWidth(Math.max(0, actCenter - 72));
+                    setActiveWidth(Math.max(0, actCenter -98));
 
                     activeItem.scrollIntoView({
                         behavior: "smooth",

@@ -2552,6 +2552,76 @@ html[data-theme="dark"] {
   background: #f1f5f9;
 }
 
+/* Label */
+.simple-file-label {
+  font-weight: 500;
+  font-size: 14px;
+  margin-bottom: 6px;
+  display: block;
+}
+
+/* Container around input */
+.simple-input-container {
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  padding: 6px;
+  background-color: #fff;
+  transition: border-color 0.2s;
+}
+
+.simple-input-container:hover {
+  border-color: #a1a1a1;
+}
+
+.simple-input-container.is-invalid-border {
+  border-color: #dc3545;
+}
+
+/* Standard file input */
+.simple-file-input {
+  width: 100%;
+  font-size: 14px;
+  color: #495057;
+  cursor: pointer;
+}
+
+/* Error text */
+.simple-error-text {
+  color: #dc3545;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+/* Progress Section */
+.simple-progress-wrapper {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  padding: 10px;
+  border-radius: 6px;
+}
+
+.simple-progress-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+  color: #495057;
+}
+
+.simple-progress-bar {
+  width: 100%;
+  height: 6px;
+  background-color: #e9ecef;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.simple-progress-fill {
+  height: 100%;
+  background-color: #0d6efd; /* Standard Blue */
+  transition: width 0.2s ease;
+}
+
 .order-form-label {
   display: block;
   margin-bottom: 8px;
@@ -3145,4 +3215,34 @@ html[data-theme="dark"] {
 .sc-cart-table td[colspan="4"] {
   background-color: #f8f9fa !important;
   border-bottom: 2px dashed #cfd8d7 !important;
+}
+
+.filter-input {
+  width: 100%;
+  padding: 8px 14px;
+  font-size: 14px;
+  color: #333333;
+  background-color: #ffffff;
+  border: 1px solid #ced4da;
+  border-radius: 6px;
+  outline: none;
+  transition:
+    border-color 0.2s ease-in-out,
+    box-shadow 0.2s ease-in-out;
+}
+
+/* Hover Effect */
+.filter-input:hover {
+  border-color: #adb5bd;
+}
+
+.filter-input:focus {
+  border-color: #b7bcc4; /* Bootstrap Primary Color */
+  box-shadow: 0 0 0 3px rgba(231, 114, 114, 0.15);
+}
+
+/* Placeholder Styling */
+.filter-input::placeholder {
+  color: #6c757d;
+  font-size: 13px;
 }

@@ -36,7 +36,8 @@ import Whychoose from "./Users/Why_choose";
 import Services from "./Users/Services";
 import CustLogin from "./Users/Login";
 import GerberUpload from "./Users/GerberUpload2";
-import Cart from "./Users/Cart"
+import Cart from "./Users/Cart";
+import VerifyEmail from "./Users/VerifyEmail";
 
 /* ================= CUSTUMER ================= */
 import CustSidebar from "./Customer/Sidebar";
@@ -130,6 +131,7 @@ function MainApp() {
           <Route path="/services/:service" element={<Services />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/login" element={<CustLogin />} />
+          <Route path="/verify-email" element={<VerifyEmail />} />
         </Route>
 
         {/* Admin Login */}
@@ -190,7 +192,7 @@ function App() {
         position="bottom-center"
         reverseOrder={false}
         toastOptions={{
-          duration: 2000,
+          duration: 5000,
           style: {
             background: "#1f2937",
             color: "#fff",

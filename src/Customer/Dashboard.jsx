@@ -44,38 +44,35 @@ function Dashboard() {
     setLoading(true);
 
     try {
-      const [
-        orderRes,
-        savecartRes,
-      ] = await Promise.all([
+      const [orderRes, quotationRes] = await Promise.all([
         axios.get(
           `${BASE_URL}customer/getCountWhereData/tbl_orders/order_cust_id/${CustId}`
         ),
 
         axios.get(
-          `${BASE_URL}admin/getdatawhere/tbl_save_quote/save_cust_id/${CustId}`
+          `${BASE_URL}customer/checkwhere/tbl_orders`,
+          {
+            params: {
+              order_cust_id: CustId,
+              order_stage: "6"
+            }
+          }
         ),
       ]);
 
-      // Only save_status = 1
-      const activeSaveQuotes = (savecartRes.data.data || []).filter(
-        (item) => Number(item.save_status) === 1
-      );
-
       setCounts({
         orders: orderRes?.data?.count || 0,
-        quotations: 0,
+        quotations: quotationRes?.data?.data ? quotationRes.data.data.length : (quotationRes?.data?.count || 0),
         dispatches: 0,
-        savecart: activeSaveQuotes.length,
       });
 
     } catch (error) {
-      console.log(error);
+      console.error("Error fetching counts:", error);
     } finally {
       setLoading(false);
     }
   };
-  
+
   const getCardCount = (route) => {
     switch (route) {
 
@@ -85,8 +82,6 @@ function Dashboard() {
         return counts.quotations;
       case "dispatches":
         return counts.dispatches;
-      case "saved-cart":
-        return counts.savecart;
       default:
         return 0;
     }

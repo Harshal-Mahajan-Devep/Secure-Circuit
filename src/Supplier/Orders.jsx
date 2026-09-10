@@ -25,6 +25,11 @@ function Orders() {
   const [showCartModal, setShowCartModal] = useState(false);
   const [cartItems, setCartItems] = useState([]);
   const [cartLoading, setCartLoading] = useState(false);
+
+  // New State for checking existing quote ID
+  const [existingQuoteId, setExistingQuoteId] = useState(null);
+  const [fetchingQuote, setFetchingQuote] = useState(false);
+
   const supplier = JSON.parse(localStorage.getItem("supplier"));
   const SuppId = supplier?.supp_id;
 
@@ -42,8 +47,142 @@ function Orders() {
     }
   }, [messages, showQueryModal]);
 
-  const getMessages = async (orderId) => {
+  // Formik validation for Quote modal
+  const formik = useFormik({
+    initialValues: {
+      sq_quote: "",
+      sq_remark: "",
+    },
+    enableReinitialize: true,
+    validationSchema: Yup.object({
+      sq_quote: Yup.string().required("Quote file is required"),
+      sq_remark: Yup.string().required("Requirement/Remark is required"),
+    }),
+    onSubmit: async (values) => {
+      try {
+        const payload = {
+          sq_supp_id: SuppId,
+          sq_order_id: selectedOrder?.order_id,
+          sq_quote: values.sq_quote, // File Name
+          sq_remark: values.sq_remark,
+        };
 
+        let res;
+        if (existingQuoteId) {
+          res = await axios.post(
+            `${BASE_URL}supplier/update/tbl_supplier_quotes/sq_id/${existingQuoteId}`,
+            payload
+          );
+        } else {
+          res = await axios.post(
+            `${BASE_URL}supplier/insert/tbl_supplier_quotes`,
+            payload
+          );
+        }
+
+        if (res.data.status) {
+          toast.success(
+            existingQuoteId
+              ? "Quote updated successfully!"
+              : "Quote uploaded successfully!"
+          );
+          resetForm();
+          getorderData();
+        } else {
+          toast.error(res.data.message || "Failed to process quote");
+        }
+      } catch (error) {
+        console.error("Quote Submission Error:", error);
+        toast.error("Something went wrong!");
+      }
+    },
+  });
+
+  // Check Existing Quote Logic
+  const handleOpenQuoteModal = async (order) => {
+    setSelectedOrder(order);
+    setShowModal(true);
+    setFetchingQuote(true);
+
+    try {
+      // API call to check existing quote by supp_id & order_id
+      const res = await axios.get(
+        `${BASE_URL}supplier/getdatawhere/tbl_supplier_quotes/sq_order_id/${order.order_id}`
+      );
+
+      if (res.data.status && res.data.data.length > 0) {
+        // Find specific quote for current supplier
+        const existingData = res.data.data.find(
+          (item) => item.sq_supp_id == SuppId
+        );
+
+        if (existingData) {
+          setExistingQuoteId(existingData.sq_id);
+          formik.setValues({
+            sq_quote: existingData.sq_quote || "",
+            sq_remark: existingData.sq_remark || "",
+          });
+        } else {
+          setExistingQuoteId(null);
+          formik.resetForm();
+        }
+      } else {
+        setExistingQuoteId(null);
+        formik.resetForm();
+      }
+    } catch (error) {
+      console.error("Error fetching existing quote:", error);
+      setExistingQuoteId(null);
+    } finally {
+      setFetchingQuote(false);
+    }
+  };
+
+  const uploadImage = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const res = await axios.post(`${BASE_URL}supplier/fileupload`, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          setUploadProgress(percentCompleted);
+        },
+      });
+
+      if (res.data.status && res.data.files) {
+        const fileName = Object.values(res.data.files)[0];
+        formik.setFieldValue("sq_quote", fileName);
+        toast.success("File uploaded successfully");
+      } else {
+        toast.error(res.data.message || "File upload failed");
+      }
+    } catch (err) {
+      console.error("Upload Error:", err);
+      toast.error("Error uploading file");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const resetForm = () => {
+    formik.resetForm();
+    setShowModal(false);
+    setSelectedOrder(null);
+    setExistingQuoteId(null);
+    setUploadProgress(0);
+  };
+
+  const getMessages = async (orderId) => {
     const res = await axios.get(
       `${BASE_URL}supplier/getdatawhere/tbl_query/que_order_id/${orderId}`
     );
@@ -51,49 +190,36 @@ function Orders() {
     if (res.data.status) {
       setMessages(res.data.data);
     }
-  }
+  };
 
   const sendMessage = async () => {
-
     if (message.trim() === "") return;
 
-    await axios.post(
-      `${BASE_URL}supplier/insert/tbl_query`,
-      {
-        que_order_id: selectedOrder.order_id,
-        que_cust_id: selectedOrder.order_cust_id,
-        que_supp_id: SuppId,
-        que_send: "supplier",
-        que_message: message,
-        que_cust_read: 0,
-        que_supp_read: 1
-      }
-    );
+    await axios.post(`${BASE_URL}supplier/insert/tbl_query`, {
+      que_order_id: selectedOrder.order_id,
+      que_cust_id: selectedOrder.order_cust_id,
+      que_supp_id: SuppId,
+      que_send: "supplier",
+      que_message: message,
+      que_cust_read: 0,
+      que_supp_read: 1,
+    });
 
     setMessage("");
-
     getMessages(selectedOrder.order_id);
-  }
+  };
 
   const markSupplierRead = async (orderId) => {
-
     try {
-      await axios.post(
-        `${BASE_URL}supplier/markSupplierRead`,
-        {
-          order_id: orderId
-        }
-      );
-
+      await axios.post(`${BASE_URL}supplier/markSupplierRead`, {
+        order_id: orderId,
+      });
       getorderData();
-
     } catch (err) {
       console.log(err);
     }
-
   };
 
-  // Order All Data Get Function
   const getorderData = async () => {
     setLoading(true);
 
@@ -122,7 +248,7 @@ function Orders() {
 
       if (cartIds) {
         const res = await axios.post(`${BASE_URL}customer/getCartDetails`, {
-          cart_ids: cartIds
+          cart_ids: cartIds,
         });
 
         if (res.data.status) {
@@ -178,37 +304,37 @@ function Orders() {
                   orderData.map((order) => (
                     <tr key={order.order_id}>
                       <td className="text-center">
-                        <div className="position-relative d-inline-block">
+                        <div className="position-relative d-inline-flex flex-column gap-2">
+                          <span
+                            className="d-inline-block"
+                            tabIndex="0"
+                            title={
+                              Number(order.order_stage) <= 7
+                                ? "Query option is not available until assigned."
+                                : ""
+                            }
+                          >
+                            <button
+                              className="btn btn-sm btn-outline-primary"
+                              onClick={() => {
+                                setSelectedOrder(order);
+                                setShowQueryModal(true);
+                                getMessages(order.order_id);
+                                markSupplierRead(order.order_id);
+                              }}
+                              disabled={Number(order.order_stage) <= 7}
+                              style={Number(order.order_stage) <= 7 ? { pointerEvents: "none" } : {}}
+                            >
+                              <i className="fa-regular fa-circle-question"></i> Query
+                            </button>
+                          </span>
 
                           <button
                             className="btn btn-sm btn-outline-primary"
-                            onClick={() => {
-                              setSelectedOrder(order);
-                              setShowQueryModal(true);
-                              getMessages(order.order_id);
-                              markSupplierRead(order.order_id);
-                            }}
-                              disabled={Number(order.order_stage) <= 7}
+                            onClick={() => handleOpenQuoteModal(order)}
                           >
-                            <i className="fa-regular fa-circle-question"></i>
-                            {" "}
-                            Query
+                            <i className="fa-solid fa-upload"></i> Upload Quote
                           </button>
-
-                          {parseInt(order.unread_count) > 0 && (
-                            <span
-                              className="position-absolute rounded-circle bg-primary"
-                              style={{
-                                width: "12px",
-                                height: "12px",
-                                right: "-2px",
-                                top: "-2px",
-                                zIndex: 9999,
-                              }}
-                            />
-
-                          )}
-
                         </div>
                       </td>
                       <td className="text-start">
@@ -221,7 +347,7 @@ function Orders() {
                             fontSize: "14px",
                             cursor: "pointer",
                             color: "#1192b9",
-                            textDecoration: "underline"
+                            textDecoration: "underline",
                           }}
                           onClick={() => handleOrderClick(order)}
                           title="Click to view Order Details"
@@ -237,6 +363,13 @@ function Orders() {
                             setSelectedOrder(order);
                             setShowStageDrawer(true);
                           }}
+                          disabled={Number(order.order_stage) <= 7}
+                          title={
+                            Number(order.order_stage) <= 7
+                              ? "Tracking will be available once assigned."
+                              : "View Tracking"
+                          }
+                          style={{ pointerEvents: "auto" }}
                         >
                           <i className="fas fa-route me-2"></i>
                           Tracking
@@ -247,14 +380,13 @@ function Orders() {
                         <span className="fw-semibold">Created Date:</span>{" "}
                         {order.order_request_date} <br />{" "}
                         <span className="fw-semibold">Created Time:</span>{" "}
-                        {new Date(`1970-01-01T${order.order_request_time}`).toLocaleTimeString(
-                          "en-IN",
-                          {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          }
-                        )}
+                        {new Date(
+                          `1970-01-01T${order.order_request_time}`
+                        ).toLocaleTimeString("en-IN", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
                       </td>
                     </tr>
                   ))
@@ -271,14 +403,14 @@ function Orders() {
         </section>
       </div>
 
-
+      {/* Upload/Edit Quote Modal */}
       {showModal && (
         <div className="model-add-edit-modal-overlay">
           <div className="model-add-edit-modal-dialog model-size-sm">
             <div className="model-add-edit-modal-content">
               <div className="model-add-edit-modal-header-primary">
                 <h5 className="model-add-edit-modal-title">
-                  Add Order
+                  {selectedOrder?.order_code}
                 </h5>
 
                 <button
@@ -290,99 +422,133 @@ function Orders() {
                 </button>
               </div>
 
-              <div className="model-add-edit-modal-body">
-                <div className="row g-3">
+              {fetchingQuote ? (
+                <div className="text-center py-4">
+                  <div className="spinner-border text-primary" role="status"></div>
+                  <p className="mt-2 text-muted">Checking Quote Details...</p>
+                </div>
+              ) : (
+                <form onSubmit={formik.handleSubmit}>
+                  <div className="model-add-edit-modal-body">
+                    <div className="row g-3">
+                      <div className="col-md-12">
+                        <div className="simple-file-box">
+                          <label className="simple-file-label">
+                            Upload PDF / ZIP <span className="text-danger">*</span>
+                          </label>
 
-                  <div className="col-md-12">
-                    <label className="order-form-label">
-                      Upload PDF/ ZIP <span className="text-danger">*</span>
-                    </label>
-
-                    <input
-                      type="file"
-                      name="order_uploaded_requirement"
-                      className={`order-file-input ${formik.touched.order_uploaded_requirement &&
-                        formik.errors.order_uploaded_requirement
-                        ? "is-invalid"
-                        : ""
-                        }`}
-                      accept=".pdf,.zip,application/pdf,application/zip,application/x-zip-compressed"
-                      onChange={(e) => {
-                        formik.setFieldTouched("order_uploaded_requirement", true);
-                        uploadImage(e);
-                      }}
-                    />
-
-                    <div className="invalid-feedback d-block">
-                      {formik.touched.order_uploaded_requirement &&
-                        formik.errors.order_uploaded_requirement}
-                    </div>
-
-                    {uploading && (
-                      <div className="upload-progress-box mt-2">
-                        <div className="upload-progress-bar">
                           <div
-                            className="upload-progress-fill"
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
+                            className={`simple-input-container ${formik.touched.sq_quote && formik.errors.sq_quote
+                              ? "is-invalid-border"
+                              : ""
+                              }`}
+                          >
+                            <input
+                              type="file"
+                              id="sq_quote"
+                              name="sq_quote"
+                              className="simple-file-input"
+                              accept=".pdf,.zip,application/pdf,application/zip,application/x-zip-compressed"
+                              onChange={(e) => {
+                                formik.setFieldTouched("sq_quote", true);
+                                uploadImage(e);
+                              }}
+                            />
+                          </div>
 
-                        <div className="mt-1 text-center fw-semibold">
-                          Uploading... {uploadProgress}%
+                          {formik.values.sq_quote && (
+                            <div className="d-flex align-items-center justify-content-between mt-2 p-2 bg-light rounded border">
+                              <div className="small text-truncate me-2">
+                                <strong>File:</strong> {formik.values.sq_quote}
+                              </div>
+                              <a
+                                href={`${BASE_URL}public/Uploads/${formik.values.sq_quote}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="btn btn-sm btn-outline-primary text-nowrap"
+                              >
+                                <i className="fa-solid fa-eye me-1"></i> View Quote
+                              </a>
+                            </div>
+                          )}
+
+                          {formik.touched.sq_quote && formik.errors.sq_quote && (
+                            <div className="simple-error-text">
+                              {formik.errors.sq_quote}
+                            </div>
+                          )}
+
+                          {uploading && (
+                            <div className="simple-progress-wrapper mt-2">
+                              <div className="simple-progress-info mb-1">
+                                <span>Uploading...</span>
+                                <span>{uploadProgress}%</span>
+                              </div>
+                              <div className="simple-progress-bar">
+                                <div
+                                  className="simple-progress-fill"
+                                  style={{ width: `${uploadProgress}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                    )}
-                  </div>
 
-                  <div className="col-md-12">
-                    <label className="order-form-label mt-3">
-                      Requirement <span className="text-danger">*</span>
-                    </label>
+                      <div className="col-md-12">
+                        <label className="order-form-label mt-3">
+                          Requirement / Remark <span className="text-danger">*</span>
+                        </label>
 
-                    <textarea
-                      rows={4}
-                      name="order_requirement_text"
-                      placeholder="Enter requirement..."
-                      className={`order-textarea ${formik.touched.order_requirement_text &&
-                        formik.errors.order_requirement_text
-                        ? "is-invalid"
-                        : ""
-                        }`}
-                      value={formik.values.order_requirement_text}
-                      onChange={formik.handleChange}
-                      onBlur={formik.handleBlur}
-                    />
+                        <textarea
+                          rows={4}
+                          name="sq_remark"
+                          placeholder="Enter requirement or remark..."
+                          className={`order-textarea ${formik.touched.sq_remark && formik.errors.sq_remark
+                            ? "is-invalid"
+                            : ""
+                            }`}
+                          value={formik.values.sq_remark}
+                          onChange={formik.handleChange}
+                          onBlur={formik.handleBlur}
+                        />
 
-                    <div className="invalid-feedback">
-                      {formik.touched.order_requirement_text &&
-                        formik.errors.order_requirement_text}
+                        <div className="invalid-feedback d-block">
+                          {formik.touched.sq_remark && formik.errors.sq_remark}
+                        </div>
+                      </div>
+
+                      <div className="model-add-edit-modal-footer d-flex justify-content-between mt-4">
+                        <button
+                          type="button"
+                          className="model-add-edit-btn model-add-edit-btn-cancel"
+                          onClick={resetForm}
+                        >
+                          Close
+                        </button>
+
+                        <button
+                          type="submit"
+                          className="model-add-edit-btn model-add-edit-btn-save-primary"
+                          disabled={uploading}
+                        >
+                          {uploading
+                            ? "Uploading..."
+                            : existingQuoteId
+                              ? "Update Quote"
+                              : "Save Quote"}
+                        </button>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="model-add-edit-modal-footer d-flex justify-content-between">
-                    <button
-                      className="model-add-edit-btn model-add-edit-btn-cancel"
-                      onClick={resetForm}
-                    >
-                      Close
-                    </button>
-
-                    <button
-                      type="button"
-                      className="model-add-edit-btn model-add-edit-btn-save-primary"
-                      onClick={formik.handleSubmit}
-                      disabled={uploading}
-                    >
-                      {uploading ? "Uploading..." : "Save"}
-                    </button>
-                  </div>
-                </div>
-              </div>
+                </form>
+              )}
             </div>
           </div>
         </div>
       )}
 
+      {/* Query Modal */}
       {showQueryModal && (
         <div className="model-add-edit-modal-overlay">
           <div className="model-add-edit-modal-dialog model-size-md">
@@ -402,8 +568,6 @@ function Orders() {
               </div>
 
               <div className="model-add-edit-modal-body p-0">
-
-                {/* Chat Area */}
                 <div className="chat-container">
                   {messages
                     .filter(
@@ -422,7 +586,7 @@ function Orders() {
                             }`}
                         >
                           {msg.que_send === "customer"
-                            ? (msg.que_edit_message || msg.que_message)
+                            ? msg.que_edit_message || msg.que_message
                             : msg.que_message}
                           <span className="chat-time">
                             {new Date(
@@ -440,7 +604,6 @@ function Orders() {
                   <div ref={messagesEndRef}></div>
                 </div>
 
-                {/* Bottom Input */}
                 <div className="chat-footer">
                   <input
                     type="text"
@@ -450,20 +613,17 @@ function Orders() {
                     onChange={(e) => setMessage(e.target.value)}
                   />
 
-                  <button
-                    className="chat-send-btn"
-                    onClick={sendMessage}
-                  >
+                  <button className="chat-send-btn" onClick={sendMessage}>
                     <i className="fa-solid fa-paper-plane"></i>
                   </button>
                 </div>
-
               </div>
             </div>
           </div>
         </div>
       )}
 
+      {/* Description Modal */}
       {showDescriptionModal && (
         <div className="model-add-edit-modal-overlay">
           <div
@@ -482,7 +642,6 @@ function Orders() {
                   className="model-add-edit-modal-close"
                   onClick={() => setShowDescriptionModal(false)}
                 >
-                  {" "}
                   ✕
                 </button>
               </div>
@@ -503,7 +662,7 @@ function Orders() {
         </div>
       )}
 
-
+      {/* Cart Items Modal */}
       {showCartModal && (
         <div
           className="sc-cartmodal-overlay"
@@ -539,10 +698,15 @@ function Orders() {
                             </td>
                           </tr>
                           <tr>
-                            {/* Basic Info */}
                             <td>
-                              <div className="sc-tbl-row"><strong>Base Material:</strong> {item.cart_base_material || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Layers:</strong> {item.cart_pcb_layer || "N/A"} Layer(s)</div>
+                              <div className="sc-tbl-row">
+                                <strong>Base Material:</strong>{" "}
+                                {item.cart_base_material || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Layers:</strong>{" "}
+                                {item.cart_pcb_layer || "N/A"} Layer(s)
+                              </div>
                               <div className="sc-tbl-row">
                                 <strong>Dimensions:</strong>{" "}
                                 {item.cart_pcb_width && item.cart_pcb_height
@@ -550,35 +714,83 @@ function Orders() {
                                   : "N/A"}
                               </div>
                               <div className="sc-tbl-row">
-                                <strong>Qty:</strong> <span className="badge bg-success">{item.cart_selected_qty || 0} Pcs</span>
+                                <strong>Qty:</strong>{" "}
+                                <span className="badge bg-success">
+                                  {item.cart_selected_qty || 0} Pcs
+                                </span>
                               </div>
-                              <div className="sc-tbl-row"><strong>Product Type:</strong> {item.cart_product_type || "N/A"}</div>
+                              <div className="sc-tbl-row">
+                                <strong>Product Type:</strong>{" "}
+                                {item.cart_product_type || "N/A"}
+                              </div>
                             </td>
 
-                            {/* Specifications */}
                             <td>
-                              <div className="sc-tbl-row"><strong>Diff Design:</strong> {item.cart_different_design || "1"}</div>
-                              <div className="sc-tbl-row"><strong>Format:</strong> {item.cart_delivery_format || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Thickness:</strong> {item.cart_pcb_thickness || "N/A"} mm</div>
-                              <div className="sc-tbl-row"><strong>Color:</strong> {item.cart_pcb_color || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Silkscreen:</strong> {item.cart_silkscreen || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Material:</strong> {item.cart_material_type || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Surface Finish:</strong> {item.cart_surface_finish || "N/A"}</div>
+                              <div className="sc-tbl-row">
+                                <strong>Diff Design:</strong>{" "}
+                                {item.cart_different_design || "1"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Format:</strong>{" "}
+                                {item.cart_delivery_format || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Thickness:</strong>{" "}
+                                {item.cart_pcb_thickness || "N/A"} mm
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Color:</strong>{" "}
+                                {item.cart_pcb_color || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Silkscreen:</strong>{" "}
+                                {item.cart_silkscreen || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Material:</strong>{" "}
+                                {item.cart_material_type || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Surface Finish:</strong>{" "}
+                                {item.cart_surface_finish || "N/A"}
+                              </div>
                             </td>
 
-                            {/* High Specs */}
                             <td>
-                              <div className="sc-tbl-row"><strong>Outer Copper:</strong> {item.cart_outer_copper_weight || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Via Covering:</strong> {item.cart_via_covering || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Via Plating:</strong> {item.cart_via_plating || "Not Specified"}</div>
-                              <div className="sc-tbl-row"><strong>Min Via Hole:</strong> {item.cart_min_via_hole || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Outline Tol:</strong> {item.cart_outline_tolerance || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Confirm File:</strong> {item.cart_confirm_production_file || "No"}</div>
-                              <div className="sc-tbl-row"><strong>Mark on PCB:</strong> {item.cart_mark_on_pcb || "N/A"}</div>
-                              <div className="sc-tbl-row"><strong>Electrical Test:</strong> {item.cart_electrical_test || "N/A"}</div>
+                              <div className="sc-tbl-row">
+                                <strong>Outer Copper:</strong>{" "}
+                                {item.cart_outer_copper_weight || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Via Covering:</strong>{" "}
+                                {item.cart_via_covering || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Via Plating:</strong>{" "}
+                                {item.cart_via_plating || "Not Specified"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Min Via Hole:</strong>{" "}
+                                {item.cart_min_via_hole || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Outline Tol:</strong>{" "}
+                                {item.cart_outline_tolerance || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Confirm File:</strong>{" "}
+                                {item.cart_confirm_production_file || "No"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Mark on PCB:</strong>{" "}
+                                {item.cart_mark_on_pcb || "N/A"}
+                              </div>
+                              <div className="sc-tbl-row">
+                                <strong>Electrical Test:</strong>{" "}
+                                {item.cart_electrical_test || "N/A"}
+                              </div>
                             </td>
 
-                            {/* Gerber Preview */}
                             <td className="text-center">
                               <div className="d-flex gap-1 justify-content-center flex-wrap">
                                 {item.cart_gerber_top_img && (
@@ -597,9 +809,12 @@ function Orders() {
                                     title="Bottom Gerber"
                                   />
                                 )}
-                                {!item.cart_gerber_top_img && !item.cart_gerber_bottom_img && (
-                                  <span className="text-muted small">No Image</span>
-                                )}
+                                {!item.cart_gerber_top_img &&
+                                  !item.cart_gerber_bottom_img && (
+                                    <span className="text-muted small">
+                                      No Image
+                                    </span>
+                                  )}
                               </div>
                             </td>
                           </tr>
@@ -617,7 +832,6 @@ function Orders() {
           </div>
         </div>
       )}
-
 
       {/* Stage Drawer Component */}
       <StageDrawer

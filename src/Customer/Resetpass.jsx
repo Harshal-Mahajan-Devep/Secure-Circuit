@@ -83,7 +83,7 @@ function Resetpass() {
         toast.success(res.data.message);
 
         setTimeout(() => {
-          navigate("/customer/login");
+          navigate("/login");
         }, 1500);
       } else {
         toast.error(res.data.message);
@@ -97,12 +97,12 @@ function Resetpass() {
 
   return (
     <div className="admin-login-wrapper-blue">
-      <div className="admin-login-bg-circles-blue d-none d-lg-block">
+      {/* <div className="admin-login-bg-circles-blue d-none d-lg-block">
         <span className="admin-login-circle1-blue"></span>
         <span className="admin-login-circle2-blue"></span>
         <span className="admin-login-circle3-blue"></span>
         <span className="admin-login-circle4-blue"></span>
-      </div>
+      </div> */}
 
       <div className="admin-login-box-blue">
         <img src={logo} alt="Logo" className="admin-login-logo-blue" />
@@ -149,7 +149,7 @@ function Resetpass() {
 
             <button
               className="admin-login-btn-blue"
-              onClick={() => navigate("/customer/login")}
+              onClick={() => navigate("/login")}
             >
               Back to Login
             </button>

@@ -57,11 +57,15 @@ function Sidebar() {
         staffRes,
         orderRes,
         supplierRes,
+        quotationRes,
+        approvedRes
       ] = await Promise.all([
         axios.get(`${BASE_URL}admin/getCountData/tbl_customers`),
         axios.get(`${BASE_URL}admin/getCountData/tbl_staff`),
         axios.get(`${BASE_URL}admin/getCountData/tbl_orders`),
         axios.get(`${BASE_URL}admin/getCountData/tbl_suppliers`),
+        axios.get(`${BASE_URL}admin/getCountDataWhere/tbl_orders/order_stage/6`),
+        axios.get(`${BASE_URL}admin/getCountDataWhere/tbl_orders/order_stage/7`),
       ]);
 
       setCounts({
@@ -69,6 +73,9 @@ function Sidebar() {
         staff: staffRes?.data?.count || 0,
         orders: orderRes?.data?.count || 0,
         suppliers: supplierRes?.data?.count || 0,
+        quotations: quotationRes?.data?.count || 0,
+        approved: approvedRes?.data?.count || 0,
+
       });
     } catch (error) {
       console.log(error);
@@ -87,10 +94,10 @@ function Sidebar() {
         return counts.orders;
       case "suppliers":
         return counts.suppliers;
-      // case "quotations":
-      //   return counts.quotations;
-      // case "approved":
-      //   return counts.approved;
+      case "quotations":
+        return counts.quotations;
+      case "approved":
+        return counts.approved;
       // case "dispatches":
       //   return counts.dispatches;
       // case "delivered":

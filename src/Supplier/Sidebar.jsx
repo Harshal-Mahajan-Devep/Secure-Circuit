@@ -62,7 +62,7 @@ function Sidebar() {
   const getCounts = async () => {
     try {
       const res = await axios.get(
-        `${BASE_URL}supplier/getdata/tbl_orders`
+        `${BASE_URL}supplier/getSupplierOrders/${SuppId}`
       );
 
       const orders = res.data.data || [];

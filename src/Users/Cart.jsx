@@ -577,7 +577,15 @@ export default function Cart() {
 
             {/* Order Confirmation Details Modal */}
             {showOrderModal && (
-                <div className="modal fade show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.6)" }}>
+                <div
+                    className="modal fade show d-block"
+                    tabIndex="-1"
+                    style={{
+                        backgroundColor: "rgba(0,0,0,0.6)",
+                        scrollbarWidth: "none",        // Firefox
+                        msOverflowStyle: "none"        // IE/Edge
+                    }}
+                >
                     <div className="modal-dialog modal-dialog-centered modal-lg">
                         <div className="modal-content shadow-lg border-0 rounded-3">
                             <div className="modal-header bg-dark text-white border-0 py-3">
@@ -591,7 +599,15 @@ export default function Cart() {
                                     disabled={isPlacingOrder}
                                 ></button>
                             </div>
-                            <div className="modal-body p-4" style={{ maxHeight: "70vh", overflowY: "auto" }}>
+                            <div
+                                className="modal-body p-4 hide-scrollbar"
+                                style={{
+                                    maxHeight: "70vh",
+                                    overflowY: "auto",
+                                    scrollbarWidth: "none",
+                                    msOverflowStyle: "none",
+                                }}
+                            >
                                 <div className="alert alert-info py-2 px-3 small mb-3">
                                     <i className="fa-solid fa-circle-info me-2"></i> Please review your selected PCB items before placing the order.
                                 </div>

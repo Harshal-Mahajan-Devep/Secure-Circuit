@@ -22,7 +22,6 @@ function Sidebar() {
     orders: 0,
     quotations: 0,
     dispatches: 0,
-    savecart: 0,
   });
 
   useEffect(() => {
@@ -61,25 +60,26 @@ function Sidebar() {
 
   const getCounts = async () => {
     try {
-      const [orderRes, savecartRes] = await Promise.all([
+      const [orderRes, quotationRes] = await Promise.all([
         axios.get(
           `${BASE_URL}customer/getCountWhereData/tbl_orders/order_cust_id/${CustId}`
         ),
 
         axios.get(
-          `${BASE_URL}admin/getdatawhere/tbl_save_quote/save_cust_id/${CustId}`
+          `${BASE_URL}customer/checkwhere/tbl_orders`,
+          {
+            params: {
+              order_cust_id: CustId,
+              order_stage: "6"
+            }
+          }
         ),
       ]);
 
-      const activeSaveQuotes = (savecartRes.data.data || []).filter(
-        (item) => Number(item.save_status) === 1
-      );
-
       setCounts({
         orders: orderRes?.data?.count || 0,
-        quotations: 0,
+        quotations: quotationRes?.data?.data ? quotationRes.data.data.length : (quotationRes?.data?.count || 0),
         dispatches: 0,
-        savecart: activeSaveQuotes.length,
       });
     } catch (error) {
       console.log(error);
@@ -96,9 +96,6 @@ function Sidebar() {
 
       case "dispatches":
         return counts.dispatches;
-
-      case "saved-cart":
-        return counts.savecart;
 
       default:
         return 0;
@@ -166,7 +163,11 @@ function Sidebar() {
 
                 <span className="nav-text">{menu.menu_name}</span>
 
-                {menu.menu_routes !== "dashboard" && (
+                {menu.menu_routes === "dashboard" ? (
+                  <span className="ms-auto dashboard-arrow">
+                    <i className="fa-solid fa-chevron-right"></i>
+                  </span>
+                ) : (
                   <span className="ms-auto badge rounded-pill bg-success">
                     {getCardCount(menu.menu_routes)}
                   </span>

@@ -7,7 +7,7 @@ import axios from "axios";
 import { BASE_URL } from "../Config/Base-url";
 
 function Profile() {
-  const customer = JSON.parse(localStorage.getItem("customer"));
+  const customer = JSON.parse(localStorage.getItem("customer")) || {};
 
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -21,7 +21,12 @@ function Profile() {
     cust_contact_person: "",
     cust_email: "",
     cust_mobile: "",
+    cust_company_name: "",
+    cust_gstno: "",
+    cust_billing_address: "",
+    cust_shipping_address: "",
     cust_image: "",
+    cust_profile_update: 0,
   });
 
   const [passwordData, setPasswordData] = useState({
@@ -43,17 +48,17 @@ function Profile() {
 
   const getProfile = async () => {
     setPageLoading(true);
-
     try {
       const res = await axios.get(
-        `${BASE_URL}customer/getdatawhere/tbl_customers/cust_id/${customer.cust_id}`,
+        `${BASE_URL}customer/getdatawhere/tbl_customers/cust_id/${customer.cust_id}`
       );
 
-      if (res.data.status) {
+      if (res.data.status && res.data.data.length > 0) {
         setProfile(res.data.data[0]);
       }
     } catch (err) {
-      console.log(err);
+      console.error(err);
+      toast.error("Failed to load profile data");
     } finally {
       setPageLoading(false);
     }
@@ -66,37 +71,26 @@ function Profile() {
     });
   };
 
+  // Form Submit Handler
   const updateProfile = (e) => {
     e.preventDefault();
 
-    const companyFilled =
-      profile.cust_company_name?.trim() !== "";
+    const companyFilled = profile.cust_company_name?.trim() !== "";
 
-    const gstFilled =
-      profile.cust_gstno?.trim() !== "";
-
-    if (
-      profile.cust_profile_update == 0 &&
-      companyFilled &&
-      gstFilled
-    ) {
+    // फक्त जर कंपनीचं नाव पहिल्यांदाच (cust_profile_update == 0) भरलं जात असेल तर कन्फर्मेशन मॉडेल दाखवा
+    if (profile.cust_profile_update == 0 && companyFilled) {
       setShowProfileConfirmModal(true);
       return;
     }
 
-    // Ek jari field empty asel tar direct update
+    // इतर सर्व वेळी थेट प्रोफाइल सेव्ह करा
     saveProfile();
-  }
-
+  };
 
   const saveProfile = async () => {
     setLoading(true);
 
-    const companyFilled =
-      profile.cust_company_name?.trim() !== "";
-
-    const gstFilled =
-      profile.cust_gstno?.trim() !== "";
+    const companyFilled = profile.cust_company_name?.trim() !== "";
 
     try {
       const updateData = {
@@ -107,12 +101,10 @@ function Profile() {
         cust_gstno: profile.cust_gstno,
         cust_billing_address: profile.cust_billing_address,
         cust_shipping_address: profile.cust_shipping_address,
-        cust_image: profile.cust_image,
+        cust_image: profile.cust_image, // Updated profile image
 
         cust_profile_update:
-          profile.cust_profile_update == 0 &&
-            companyFilled &&
-            gstFilled
+          profile.cust_profile_update == 0 && companyFilled
             ? 1
             : profile.cust_profile_update,
       };
@@ -125,12 +117,7 @@ function Profile() {
       if (res.data.status) {
         setProfile((prev) => ({
           ...prev,
-          cust_profile_update:
-            profile.cust_profile_update == 0 &&
-              companyFilled &&
-              gstFilled
-              ? 1
-              : prev.cust_profile_update,
+          ...updateData,
         }));
 
         localStorage.setItem(
@@ -141,13 +128,16 @@ function Profile() {
           })
         );
 
-        toast.success(res.data.message);
+        toast.success(res.data.message || "Profile updated successfully");
+      } else {
+        toast.error(res.data.message || "Update failed");
       }
     } catch (err) {
+      console.error(err);
       toast.error("Update failed");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   const confirmProfileUpdate = () => {
@@ -155,9 +145,9 @@ function Profile() {
     saveProfile();
   };
 
+  // Profile Image Upload API Logic Fix
   const uploadImage = async (e) => {
     const file = e.target.files[0];
-
     if (!file) return;
 
     const formData = new FormData();
@@ -174,30 +164,35 @@ function Profile() {
           headers: {
             "Content-Type": "multipart/form-data",
           },
-
           onUploadProgress: (progressEvent) => {
             const percent = Math.round(
               (progressEvent.loaded * 100) / progressEvent.total
             );
-
             setUploadProgress(percent);
           },
         }
       );
 
       if (upload.data.status) {
+        const uploadedFileName = upload.data.files.cust_image;
+
         setProfile((prev) => ({
           ...prev,
-          cust_image: upload.data.files.cust_image,
+          cust_image: uploadedFileName,
         }));
 
-        toast.success("Profile image uploaded");
+        const updatedCustomer = {
+          ...customer,
+          cust_image: uploadedFileName,
+        };
+        localStorage.setItem("customer", JSON.stringify(updatedCustomer));
+
+        toast.success("Profile image uploaded successfully!");
+      } else {
+        toast.error(upload.data.message || "Image upload failed");
       }
-
-      setUploadProgress(100);
-
     } catch (err) {
-      console.log(err);
+      console.error(err);
       toast.error("Image upload failed");
     } finally {
       setTimeout(() => {
@@ -206,7 +201,6 @@ function Profile() {
       }, 700);
     }
   };
-
 
   const changePassword = async () => {
     if (
@@ -222,24 +216,19 @@ function Profile() {
     }
 
     try {
-      const res = await axios.post(
-        `${BASE_URL}customer/changepassword`,
-        {
-          cust_id: customer.cust_id,
-          current_password: passwordData.current_password,
-          new_password: passwordData.new_password,
-        }
-      );
+      const res = await axios.post(`${BASE_URL}customer/changepassword`, {
+        cust_id: customer.cust_id,
+        current_password: passwordData.current_password,
+        new_password: passwordData.new_password,
+      });
 
       if (res.data.status) {
         toast.success(res.data.message);
-
         setPasswordData({
           current_password: "",
           new_password: "",
           confirm_password: "",
         });
-
         setShowModal(false);
       } else {
         toast.error(res.data.message);
@@ -248,13 +237,6 @@ function Profile() {
       toast.error("Password change failed");
     }
   };
-
-  const resetForm = () => {
-    resetForm();
-    setShowModal(false);
-  };
-
-
 
   // Testimonial modal handlers
   const [testimonialData, setTestimonialData] = useState({
@@ -283,7 +265,7 @@ function Profile() {
         `${BASE_URL}customer/gettestimonial/${customer.cust_id}`
       );
 
-      if (res.data.status) {
+      if (res.data.status && res.data.data) {
         setTestimonialData({
           test_id: res.data.data.test_id,
           test_rating: res.data.data.test_rating,
@@ -297,12 +279,11 @@ function Profile() {
         });
       }
     } catch (err) {
-      console.log(err);
+      console.error(err);
     }
   };
 
   const saveTestimonial = async () => {
-
     if (testimonialData.test_rating === 0) {
       return toast.error("Please select rating");
     }
@@ -312,29 +293,22 @@ function Profile() {
     }
 
     try {
-
-      const res = await axios.post(
-        `${BASE_URL}customer/savetestimonial`,
-        {
-          test_cust_id: customer.cust_id,
-          test_rating: testimonialData.test_rating,
-          test_text: testimonialData.test_text,
-        }
-      );
+      const res = await axios.post(`${BASE_URL}customer/savetestimonial`, {
+        test_cust_id: customer.cust_id,
+        test_rating: testimonialData.test_rating,
+        test_text: testimonialData.test_text,
+      });
 
       if (res.data.status) {
         toast.success(res.data.message);
         setShowTestimonialModal(false);
         getTestimonial();
-
       } else {
         toast.error(res.data.message);
       }
-
     } catch (err) {
       toast.error("Something went wrong");
     }
-
   };
 
   return (
@@ -343,7 +317,10 @@ function Profile() {
         <div className="page-heading">
           <div className="page-heading-copy">
             <span className="page-icon">
-              <i className="bi bi-person-badge text-success" aria-hidden="true"></i>
+              <i
+                className="bi bi-person-badge text-success"
+                aria-hidden="true"
+              ></i>
             </span>
             <div>
               <p className="eyebrow mb-1 text-success">Account</p>
@@ -357,88 +334,69 @@ function Profile() {
             <>
               <div className="col-12 col-xl-4">
                 <div className="panel h-100 text-center profile-card p-4">
-
                   <div className="profile-skeleton profile-avatar"></div>
-
                   <div className="profile-skeleton profile-title"></div>
-
                   <div className="mt-4">
                     <div className="profile-skeleton profile-text"></div>
                     <div className="profile-skeleton profile-text"></div>
                     <div className="profile-skeleton profile-text"></div>
                     <div className="profile-skeleton profile-text"></div>
                   </div>
-
                 </div>
               </div>
 
               <div className="col-12 col-xl-8">
                 <div className="panel p-4">
-
                   <div className="row g-3">
-
                     <div className="col-md-1">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-md-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div
                       className="col-md-6 d-flex justify-content-end align-items-end"
                       style={{ minHeight: "10px" }}
                     >
                       <div className="profile-skeleton profile-input-button"></div>
                     </div>
-
                     <div className="col-md-4 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-md-4 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-md-4 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-md-4 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-md-4 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div
                       className="col-md-4 d-flex justify-content-center align-items-center mt-5"
                       style={{ minHeight: "10px" }}
                     >
                       <div className="profile-skeleton profile-input-file"></div>
                     </div>
-
                     <div className="col-md-6 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-md-6 mt-5">
                       <div className="profile-skeleton profile-input"></div>
                     </div>
-
                     <div className="col-12 d-flex justify-content-center mt-4">
                       <div className="profile-skeleton profile-button"></div>
                     </div>
-
                   </div>
-
                 </div>
               </div>
             </>
           ) : (
-
             <>
+              {/* Left Profile Card */}
               <div className="col-12 col-xl-4">
                 <div className="panel h-100 text-center profile-card">
                   <img
@@ -448,9 +406,11 @@ function Profile() {
                         ? `${BASE_URL}public/Uploads/${profile.cust_image}`
                         : defaultProfile
                     }
-                    alt={profile.cust_contact_person}
+                    alt={profile.cust_contact_person || "User Profile"}
                   />
-                  <h2 className="h5 mt-3 mb-1 fw-bold">{profile.cust_contact_person}</h2>
+                  <h2 className="h5 mt-3 mb-1 fw-bold">
+                    {profile.cust_contact_person}
+                  </h2>
 
                   <div className="info-list mt-4 text-start">
                     <div>
@@ -464,27 +424,35 @@ function Profile() {
                     </div>
                     <div>
                       <span>Company</span>
-                      <strong>{profile.cust_company_name?.slice(0, 15)} </strong>
+                      <strong>
+                        {profile.cust_company_name?.slice(0, 15)}
+                      </strong>
                     </div>
                     <button
-                      className="btn btn-outline-success"
+                      className="btn btn-outline-success mt-3 w-100"
                       type="button"
-                      onClick={() => {
-                        setShowModal(true);
-                      }}>Change Password</button>
+                      onClick={() => setShowModal(true)}
+                    >
+                      Change Password
+                    </button>
                   </div>
                 </div>
               </div>
+
+              {/* Right Profile Form */}
               <div className="col-12 col-xl-8">
                 <form
                   onSubmit={updateProfile}
                   className="panel needs-validation"
                   noValidate
                 >
-                  <div className="panel-header">
+                  <div className="panel-header d-flex justify-content-between align-items-center mb-3">
                     <div>
                       <h2 className="h5 mb-1 section-title">
-                        <i className="bi bi-person-gear text-success" aria-hidden="true"></i>
+                        <i
+                          className="bi bi-person-gear text-success me-2"
+                          aria-hidden="true"
+                        ></i>
                         <span>Profile Settings</span>
                       </h2>
                       <p className="text-muted mb-0">
@@ -514,7 +482,7 @@ function Profile() {
                         placeholder="Full Name"
                         type="text"
                         name="cust_contact_person"
-                        value={profile.cust_contact_person}
+                        value={profile.cust_contact_person || ""}
                         onChange={handleChange}
                         readOnly
                         disabled
@@ -527,10 +495,11 @@ function Profile() {
                       </label>
                       <input
                         className="model-add-edit-input"
+                        id="profileEmail"
                         type="email"
                         placeholder="Email"
                         name="cust_email"
-                        value={profile.cust_email}
+                        value={profile.cust_email || ""}
                         onChange={handleChange}
                         readOnly
                         disabled
@@ -539,64 +508,73 @@ function Profile() {
 
                     <div className="col-md-4">
                       <label className="form-label" htmlFor="profileMobile">
-                        Moble
+                        Mobile
                       </label>
                       <input
                         className="model-add-edit-input"
+                        id="profileMobile"
                         type="tel"
                         placeholder="Mobile"
                         name="cust_mobile"
                         maxLength={10}
-                        value={profile.cust_mobile}
+                        value={profile.cust_mobile || ""}
                         onChange={handleChange}
                         readOnly
                         disabled
                       />
                     </div>
 
+                    {/* Company Name: Only Editable Once */}
                     <div className="col-md-4">
-                      <label className="form-label" htmlFor="profileEmail">
+                      <label className="form-label" htmlFor="profileCompany">
                         Company Name
                       </label>
                       <input
                         className="model-add-edit-input"
+                        id="profileCompany"
                         type="text"
                         placeholder="Company Name"
                         name="cust_company_name"
-                        value={profile.cust_company_name}
+                        value={profile.cust_company_name || ""}
                         onChange={handleChange}
                         disabled={profile.cust_profile_update == 1}
-
                       />
+                      {profile.cust_profile_update == 1 && (
+                        <small className="text-muted d-block mt-1">
+                          (Company Name cannot be changed)
+                        </small>
+                      )}
                     </div>
 
+                    {/* GST No: Editable Multiple Times */}
                     <div className="col-md-4">
-                      <label className="form-label" htmlFor="profileEmail">
+                      <label className="form-label" htmlFor="profileGST">
                         GST No
                       </label>
                       <input
                         className="model-add-edit-input"
+                        id="profileGST"
                         type="text"
                         placeholder="GST Number"
                         name="cust_gstno"
-                        value={profile.cust_gstno}
+                        value={profile.cust_gstno || ""}
                         onChange={handleChange}
-                        disabled={profile.cust_profile_update == 1}
-
                       />
                     </div>
+
+                    {/* Image Upload Button */}
                     <div className="col-md-4 text-center pt-2">
                       <input
                         type="file"
                         className="d-none"
                         id="profileImage"
-                        accept="image/*"
+                        accept="image/png, image/jpeg, image/jpg, image/webp"
                         onChange={uploadImage}
                       />
 
                       <label
                         htmlFor="profileImage"
-                        className="btn btn-outline-success btn-sm rounded-pill mt-4 px-3 py-2"
+                        className="btn btn-outline-success btn-sm rounded-pill mt-4 px-3 py-2 cursor-pointer"
                       >
                         <i className="fas fa-image me-2"></i>
                         Choose Profile Image
@@ -609,7 +587,6 @@ function Profile() {
                               style={{ width: `${uploadProgress}%` }}
                             ></div>
                           </div>
-
                           <small className="fw-semibold">
                             Uploading... {uploadProgress}%
                           </small>
@@ -618,37 +595,36 @@ function Profile() {
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label" htmlFor="profileEmail">
+                      <label className="form-label" htmlFor="profileBilling">
                         Billing Address
                       </label>
                       <textarea
                         className="model-add-edit-input"
+                        id="profileBilling"
                         rows={3}
                         name="cust_billing_address"
                         placeholder="Billing address"
-                        value={profile.cust_billing_address}
+                        value={profile.cust_billing_address || ""}
                         onChange={handleChange}
-                      >
-                      </textarea>
+                      ></textarea>
                     </div>
 
                     <div className="col-md-6">
-                      <label className="form-label" htmlFor="profileEmail">
+                      <label className="form-label" htmlFor="profileShipping">
                         Shipping Address
                       </label>
                       <textarea
                         className="model-add-edit-input"
+                        id="profileShipping"
                         rows={3}
                         placeholder="Shipping Address"
                         name="cust_shipping_address"
-                        value={profile.cust_shipping_address}
+                        value={profile.cust_shipping_address || ""}
                         onChange={handleChange}
-                      >
-                      </textarea>
+                      ></textarea>
                     </div>
-
-
                   </div>
+
                   <div className="d-flex justify-content-center mt-4">
                     <button
                       className="btn btn-outline-success"
@@ -662,29 +638,27 @@ function Profile() {
               </div>
             </>
           )}
-        </section >
-      </div >
+        </section>
+      </div>
 
+      {/* Change Password Modal */}
       {showModal && (
         <div className="model-add-edit-modal-overlay">
           <div className="model-add-edit-modal-dialog model-size-sm">
             <div className="model-add-edit-modal-content">
               <div className="model-add-edit-modal-header-success">
-                <h5 className="model-add-edit-modal-title">
-                  Change Password
-                </h5>
-
+                <h5 className="model-add-edit-modal-title">Change Password</h5>
                 <button
                   type="button"
                   className="model-add-edit-modal-close"
-                  onClick={() => setShowModal(false)}                >
+                  onClick={() => setShowModal(false)}
+                >
                   ✕
                 </button>
               </div>
 
               <div className="model-add-edit-modal-body">
                 <div className="row g-3">
-
                   <div className="col-md-12">
                     <label className="form-label">Current Password</label>
                     <input
@@ -702,7 +676,7 @@ function Profile() {
                     <input
                       type="password"
                       className="model-add-edit-input"
-                      placeholder="New Pasword"
+                      placeholder="New Password"
                       name="new_password"
                       value={passwordData.new_password}
                       onChange={handlePasswordChange}
@@ -721,9 +695,10 @@ function Profile() {
                     />
                   </div>
 
-                  <div className="model-add-edit-modal-footer d-flex justify-content-between">
+                  <div className="model-add-edit-modal-footer d-flex justify-content-between mt-3">
                     <button
                       className="model-add-edit-btn model-add-edit-btn-cancel"
+                      type="button"
                       onClick={() => setShowModal(false)}
                     >
                       Close
@@ -744,11 +719,11 @@ function Profile() {
         </div>
       )}
 
+      {/* Testimonial Modal */}
       {showTestimonialModal && (
         <div className="model-add-edit-modal-overlay">
           <div className="model-add-edit-modal-dialog model-size-sm">
             <div className="model-add-edit-modal-content">
-
               <div className="model-add-edit-modal-header-success">
                 <h5 className="model-add-edit-modal-title">
                   {testimonialData.test_id
@@ -767,12 +742,9 @@ function Profile() {
               <div className="model-add-edit-modal-body">
                 <div className="row">
                   <div className="mb-3 text-center">
-                    <label className="form-label fw-semibold">
-                      Rating
-                    </label>
+                    <label className="form-label fw-semibold">Rating</label>
 
                     <div className="fs-2">
-
                       {[1, 2, 3, 4, 5].map((star) => (
                         <span
                           key={star}
@@ -789,7 +761,6 @@ function Profile() {
                           ★
                         </span>
                       ))}
-
                     </div>
                   </div>
 
@@ -809,12 +780,10 @@ function Profile() {
                   </div>
 
                   <div className="model-add-edit-modal-footer d-flex justify-content-between">
-
                     <button
                       className="model-add-edit-btn model-add-edit-btn-cancel"
                       onClick={() => {
                         setShowTestimonialModal(false);
-
                         setTestimonialData({
                           test_id: "",
                           test_rating: 0,
@@ -831,25 +800,22 @@ function Profile() {
                     >
                       {testimonialData.test_id ? "Update" : "Save"}
                     </button>
-
                   </div>
                 </div>
-
               </div>
             </div>
           </div>
         </div>
       )}
 
-
+      {/* Profile Update Confirmation Modal (Only for One-Time Company Name Update) */}
       {showProfileConfirmModal && (
         <div className="model-add-edit-modal-overlay">
           <div className="model-add-edit-modal-dialog model-size-sm">
             <div className="model-add-edit-modal-content">
-
               <div className="model-add-edit-modal-header-success">
                 <h5 className="model-add-edit-modal-title">
-                  One Time Profile Update
+                  One-Time Company Name Update
                 </h5>
 
                 <button
@@ -863,7 +829,6 @@ function Profile() {
 
               <div className="model-add-edit-modal-body">
                 <div className="row">
-
                   <div className="text-center mb-3">
                     <i
                       className="fas fa-exclamation-circle text-warning"
@@ -872,19 +837,20 @@ function Profile() {
                   </div>
 
                   <h5 className="text-center fw-bold mb-3">
-                    One-Time Profile Update
+                    One-Time Company Name Lock
                   </h5>
 
                   <p className="text-center mb-3">
-                    These details can be updated <span className="text-danger fw-bold">only once</span>.
-                    Please verify that the information entered is accurate before proceeding.
+                    The company name entered can be set{" "}
+                    <span className="text-danger fw-bold">only once</span>.
+                    Please verify that the company name is accurate before proceeding.
                   </p>
 
                   <div className="alert alert-warning mb-4">
                     <i className="fas fa-info-circle me-2"></i>
-                    <strong>Important:</strong> Once this update is submitted, the
-                    <strong> Company Name</strong> and <strong>GST Number</strong> cannot be modified again.
-                    Other profile details, such as your address and profile image, can still be updated in the future.
+                    <strong>Important:</strong> Once submitted, the{" "}
+                    <strong>Company Name</strong> cannot be modified again.
+                    However, your GST Number, Address, and Profile Image can still be updated at any time in the future.
                   </div>
 
                   <div className="model-add-edit-modal-footer d-flex justify-content-between">
@@ -901,11 +867,9 @@ function Profile() {
                     >
                       Yes, Continue
                     </button>
-
                   </div>
                 </div>
               </div>
-
             </div>
           </div>
         </div>

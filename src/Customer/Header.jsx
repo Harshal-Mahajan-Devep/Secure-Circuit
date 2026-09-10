@@ -126,7 +126,7 @@ function Header() {
                       : "User"}
                   </span>
 
-                  <span style={{ fontSize: "13px", marginTop: "-5px" }}>{cust?.role_name}</span>
+                  <span style={{ fontSize: "13px", marginTop: "-5px" }}>{cust?.role_name ? cust.role_name : "Customer"}</span>
                 </div>
 
               </button>

@@ -36,6 +36,7 @@ export default function GerberUpload() {
     const pdfContainerRef = useRef(null);
 
     // API & File Handling States
+    const [gerberId, setGerberId] = useState(null);
     const [uploading, setUploading] = useState(false);
     const [uploadedFileName, setUploadedFileName] = useState("");
     const [gerberToken, setGerberToken] = useState("");
@@ -209,13 +210,16 @@ export default function GerberUpload() {
                 const auditData = res.data.data;
 
                 if (auditData.stencilLayer) setPcbLayer(Number(auditData.stencilLayer));
-                if (auditData.setWidth) setPcbWidth(auditData.setWidth);
-                if (auditData.setLength) setPcbHeight(auditData.setLength);
+
+                // ✅ अचूक स्टेट मॅपिंग (Correct State Mapping)
+                if (auditData.setWidth) setPcbWidth(String(auditData.setWidth));
+                if (auditData.setLength) setPcbHeight(String(auditData.setLength));
+
                 if (auditData.gerberTop) setGerberTopImg(auditData.gerberTop);
                 if (auditData.gerberBottom) setGerberBottomImg(auditData.gerberBottom);
 
                 setUploading(false);
-                console.log("Gerber Parsed Successfully:", auditData);
+                toast.success("Gerber analyzed successfully!");
             }
             else if (res.data && (res.data.code === 2501 || res.data.code === 2) && retries > 0) {
                 setTimeout(() => {
@@ -224,7 +228,7 @@ export default function GerberUpload() {
             }
             else {
                 setUploading(false);
-                alert("Gerber parsing took longer than expected. Please select options manually.");
+                toast.error("Gerber parsing took longer than expected. Please select options manually.");
             }
         } catch (err) {
             setUploading(false);
@@ -249,18 +253,22 @@ export default function GerberUpload() {
 
             if (response.data && response.data.code === 200) {
                 const token = response.data.data;
+                const insertedGerberId = response.data.gerber_id; // Extract gerber_id
+
                 setGerberToken(token);
+                setGerberId(insertedGerberId); // Set ID in state
 
                 setTimeout(() => {
                     fetchAndAutoFillSpecs(token, 10);
                 }, 3000);
             } else {
                 setUploading(false);
-                alert(response.data.message || "Failed to upload file.");
+                toast.error(response.data.message || "Failed to upload file.");
             }
         } catch (error) {
             setUploading(false);
             console.error("Upload error:", error);
+            toast.error("Error uploading Gerber file.");
         }
     };
 
@@ -314,6 +322,94 @@ export default function GerberUpload() {
     }, [showPdfPreviewModal, showSaveQuoteModal, showSCModal]);
 
 
+    // const handleSaveQuote = async () => {
+    //     if (!uploadedFileName || !gerberToken) {
+    //         toast.error("Please upload a Gerber file first before saving to cart!");
+    //         return;
+    //     }
+
+    //     try {
+    //         const tokenResult = await getOrSetCookieToken();
+
+    //         const cookieToken = typeof tokenResult === "string"
+    //             ? tokenResult
+    //             : (tokenResult?.visitorId || String(tokenResult || ""));
+
+    //         // ✅ Delivery Format ची स्ट्रिंग तयार करा जेणेकरून ती एकाच कॉलममध्ये सेव्ह होईल
+    //         let finalDeliveryFormat = deliveryFormat;
+    //         if (deliveryFormat === "Panel by SC") {
+    //             finalDeliveryFormat = `Panel by SC (${panelCols}x${panelRows}, Col Gap: ${colSpacing}mm, Row Gap: ${rowSpacing}mm)`;
+    //         }
+
+    //         const payload = {
+    //             cart_cookie_token: String(cookieToken),
+
+    //             cart_base_material: baseMaterial,
+    //             cart_pcb_layer: pcbLayer,
+    //             cart_pcb_width: pcbWidth || "100",
+    //             cart_pcb_height: pcbHeight || "100",
+    //             cart_selected_qty: selectedQty,
+    //             cart_product_type: productType,
+
+    //             // PCB Specifications
+    //             cart_different_design: differentDesign,
+
+    //             // ✅ एकाच कॉलममध्ये (cart_delivery_format) सर्व डिटेल्स सेव्ह होतील
+    //             cart_delivery_format: finalDeliveryFormat,
+
+    //             cart_pcb_thickness: pcbThickness,
+    //             cart_pcb_color: pcbColor,
+    //             cart_silkscreen: pcbColor === "White" ? "Black" : "White",
+    //             cart_material_type: materialType,
+    //             cart_surface_finish: surfaceFinish,
+
+    //             // High Specifications
+    //             cart_outer_copper_weight: copperWeight,
+    //             cart_via_covering: viaCovering,
+    //             cart_via_plating: viaPlating,
+    //             cart_min_via_hole: minViaHole,
+    //             cart_outline_tolerance: outlineTolerance,
+    //             cart_confirm_production_file: confirmFile,
+    //             cart_mark_on_pcb: markOnPcb,
+    //             cart_electrical_test: electricalTest,
+    //             cart_gold_fingers: goldFingers,
+    //             cart_castellated_holes: castellatedHoles,
+    //             cart_edge_plating: edgePlating,
+    //             cart_blind_slots: blindSlots,
+    //             cart_ul_marking: ulMarking,
+    //             cart_humidity_card: humidityCard,
+
+    //             // Remark
+    //             cart_pcb_remark: pcbRemark,
+
+    //             // Top & Bottom Gerber Images
+    //             cart_gerber_top_img: gerberTopImg ? getColoredImageUrl(gerberTopImg, pcbColor) : "",
+    //             cart_gerber_bottom_img: gerberBottomImg ? getColoredImageUrl(gerberBottomImg, pcbColor) : ""
+    //         };
+
+    //         const response = await axios.post(
+    //             `${BASE_URL}customer/insert/tbl_cart`,
+    //             payload
+    //         );
+
+    //         if (response.data && response.data.status) {
+    //             toast.success("PCB Specifications saved to cart!");
+    //             setShowSaveQuoteModal(false);
+
+    //             setTimeout(() => {
+    //                 navigate("/cart");
+    //             }, 1000);
+    //         } else {
+    //             toast.error(response.data.message || "Failed to save cart.");
+    //         }
+    //     } catch (error) {
+    //         console.error("Save Cart Error:", error);
+    //         toast.error("Error saving data to cart.");
+    //     }
+    // };
+
+
+
     const handleSaveQuote = async () => {
         if (!uploadedFileName || !gerberToken) {
             toast.error("Please upload a Gerber file first before saving to cart!");
@@ -321,19 +417,23 @@ export default function GerberUpload() {
         }
 
         try {
-            // 1. Await वापरून टोकन मिळवा (Promise सॉल्व्ह होईल)
             const tokenResult = await getOrSetCookieToken();
 
-            // 2. स्ट्रिंग व्हॅल्यू एक्सट्रॅक्ट करा
             const cookieToken = typeof tokenResult === "string"
                 ? tokenResult
                 : (tokenResult?.visitorId || String(tokenResult || ""));
 
+            let finalDeliveryFormat = deliveryFormat;
+            if (deliveryFormat === "Panel by SC") {
+                finalDeliveryFormat = `Panel by SC (${panelCols}x${panelRows}, Col Gap: ${colSpacing}mm, Row Gap: ${rowSpacing}mm)`;
+            }
+
             const payload = {
-                // Cookie Token (नेहमी स्ट्रिंगच जाईल)
                 cart_cookie_token: String(cookieToken),
 
-                // Basic Information
+                // Save the returned gerber_id to cart_gerber_file
+                cart_gerber_file: gerberId,
+
                 cart_base_material: baseMaterial,
                 cart_pcb_layer: pcbLayer,
                 cart_pcb_width: pcbWidth || "100",
@@ -343,7 +443,7 @@ export default function GerberUpload() {
 
                 // PCB Specifications
                 cart_different_design: differentDesign,
-                cart_delivery_format: deliveryFormat,
+                cart_delivery_format: finalDeliveryFormat,
                 cart_pcb_thickness: pcbThickness,
                 cart_pcb_color: pcbColor,
                 cart_silkscreen: pcbColor === "White" ? "Black" : "White",
@@ -484,6 +584,7 @@ export default function GerberUpload() {
                                             onClick={() => {
                                                 setUploadedFileName("");
                                                 setGerberToken("");
+                                                setGerberId(null); // Reset gerber_id
                                                 setGerberTopImg("");
                                                 setGerberBottomImg("");
                                                 setActiveModalTab("outline");
@@ -578,22 +679,25 @@ export default function GerberUpload() {
                                 <i className="fa-regular fa-circle-question pcb-highspec-help"></i>
                             </label>
                             <div className="pcb-dimension-box">
-                                <input
-                                    type="number"
-                                    className="pcb-input-size"
-                                    placeholder="Width"
-                                    value={pcbHeight || 100}
-                                    onChange={(e) => setPcbWidth(e.target.value)}
-                                    readOnly={Boolean(pcbHeight)}
-                                />
-                                <span className="pcb-cross">×</span>
+
+                                {/* Height / Length Field */}
                                 <input
                                     type="number"
                                     className="pcb-input-size"
                                     placeholder="Height"
-                                    value={pcbWidth || 100}
+                                    value={pcbHeight || ""}
                                     onChange={(e) => setPcbHeight(e.target.value)}
-                                    readOnly={Boolean(pcbWidth)}
+                                    readOnly={Boolean(gerberToken)}
+                                />
+                                <span className="pcb-cross">×</span>
+                                {/* Width Field */}
+                                <input
+                                    type="number"
+                                    className="pcb-input-size"
+                                    placeholder="Width"
+                                    value={pcbWidth || ""}
+                                    onChange={(e) => setPcbWidth(e.target.value)}
+                                    readOnly={Boolean(gerberToken)}
                                 />
                                 <select className="pcb-unit-select" disabled>
                                     <option>mm</option>
@@ -1247,13 +1351,27 @@ export default function GerberUpload() {
 
                                 <li className="pcb-preview-grid-item">
                                     <span className="pcb-preview-key">Dimensions</span>
-                                    <span className="pcb-preview-val">{pcbHeight || 100} × {pcbWidth || 100} mm</span>
+                                    <span className="pcb-preview-val">{pcbWidth || 100} × {pcbHeight || 100} mm</span>
                                 </li>
 
                                 <li className="pcb-preview-grid-item">
                                     <span className="pcb-preview-key">PCB Quantity</span>
                                     <span className="pcb-badge-blue">{selectedQty} Pcs</span>
                                 </li>
+
+                                {/* <li className="pcb-preview-grid-item">
+                                    <span className="pcb-preview-key">Delivery Format</span>
+                                    <span className="pcb-preview-val">
+                                        {deliveryFormat === "Panel by SC"
+                                            ? `Panel (${panelCols}×${panelRows})`
+                                            : deliveryFormat}
+                                    </span>
+                                </li>
+
+                                <li className="pcb-preview-grid-item">
+                                    <span className="pcb-preview-key">Different Design</span>
+                                    <span className="pcb-preview-val">{differentDesign}</span>
+                                </li> */}
 
                                 <li className="pcb-preview-grid-item">
                                     <span className="pcb-preview-key">PCB Thickness</span>
@@ -1355,9 +1473,11 @@ export default function GerberUpload() {
                                             <div className="jlc-input-group">
                                                 <input
                                                     type="number"
-                                                    min="1"
                                                     value={panelCols}
-                                                    onChange={(e) => setPanelCols(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    onChange={(e) => setPanelCols(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
+                                                    onBlur={() => {
+                                                        if (!panelCols || panelCols < 1) setPanelCols(1);
+                                                    }}
                                                 />
                                             </div>
                                         </div>
@@ -1366,9 +1486,11 @@ export default function GerberUpload() {
                                             <div className="jlc-input-group">
                                                 <input
                                                     type="number"
-                                                    min="1"
                                                     value={panelRows}
-                                                    onChange={(e) => setPanelRows(Math.max(1, parseInt(e.target.value) || 1))}
+                                                    onChange={(e) => setPanelRows(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
+                                                    onBlur={() => {
+                                                        if (!panelRows || panelRows < 1) setPanelRows(1);
+                                                    }}
                                                 />
                                             </div>
                                         </div>

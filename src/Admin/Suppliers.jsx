@@ -419,8 +419,8 @@ function Suppliers() {
                         <span className="fw-semibold">Type:</span> {supp.supp_type}<br />
                         <span className="fw-semibold">Address:</span>{" "}
                         <span
-                          className="text-dark fw-bold"
-                          style={{ cursor: "pointer", fontSize: "16px" }}
+                          className="text-dark fw-semibold"
+                          style={{ cursor: "pointer", fontSize: "15px" }}
                           data-bs-toggle="popover"
                           data-bs-trigger="hover"
                           data-bs-html="true"
@@ -896,8 +896,7 @@ function Suppliers() {
             </div>
           </div>
         </div>
-      )
-      }
+      )}
 
       <Delete
         show={showDelete}

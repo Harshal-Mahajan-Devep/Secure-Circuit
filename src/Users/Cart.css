@@ -3,10 +3,11 @@
   display: flex;
   gap: 20px;
   max-width: 1400px;
-  margin: 25px auto;
-  padding: 0 15px;
+  margin: 0 auto;
+  padding: 3rem 15px;
   align-items: flex-start;
   position: relative;
+  background: #eee;
 }
 
 /* Left Table Layout */
@@ -45,6 +46,7 @@
 .pcb-row-item {
   margin-bottom: 4px;
   line-height: 1.4;
+  color: #000;
 }
 
 .pcb-row-item strong {
@@ -52,11 +54,47 @@
 }
 
 /* Custom Checkbox Design */
+/* .pcb-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #cc0000 !important;
+  background: #fff !important;
+  color: #000 !important;
+} */
+
 .pcb-checkbox {
   width: 18px;
   height: 18px;
   cursor: pointer;
-  accent-color: #cc0000;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid #c9c4c4;
+  border-radius: 4px;
+  background: #fff !important;
+  display: inline-grid;
+  place-content: center;
+  margin: 0;
+}
+
+/* Checked */
+.pcb-checkbox:checked {
+  background: #cc0000 !important;
+  border-color: #cc0000;
+}
+
+/* White check mark */
+.pcb-checkbox:checked::after {
+  content: "✓";
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Hover */
+.pcb-checkbox:hover {
+  border-color: #a00000;
 }
 
 /* Selected Row Highlight Effect */
@@ -109,6 +147,20 @@
   font-size: 13px;
   font-weight: 600;
   outline: none;
+  background: #fff;
+  color: #000 !important;
+}
+
+.pcb-qty-combo-input::-webkit-outer-spin-button,
+.pcb-qty-combo-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Firefox */
+.pcb-qty-combo-input[type="number"] {
+  -moz-appearance: textfield;
+  appearance: textfield;
 }
 
 .pcb-btn-save-sm {
@@ -194,13 +246,13 @@
 
 .alert-success {
   background-color: #f0fdf4;
-  color: #166534;
+  color: #025321 !important;
   border: 1px solid #bbf7d0;
 }
 
 .alert-warning {
   background-color: #fffbeb;
-  color: #92400e;
+  color: #92400e !important;
   border: 1px solid #fef3c7;
 }
 
@@ -306,9 +358,9 @@
   justify-content: center;
   align-items: center;
   min-height: 60vh;
-  padding: 2rem 1rem;
+  padding: 5.5rem 1px 2rem 1rem;
   background-color: #f8fafc;
-  margin-top: 50px;
+  margin-top: 0;
 }
 
 /* ==========================================
