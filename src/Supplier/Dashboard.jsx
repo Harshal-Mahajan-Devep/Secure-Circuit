@@ -20,7 +20,7 @@ function Dashboard() {
 
   useEffect(() => {
     if (!supplier) {
-      navigate("/supplier/login");
+      navigate("/user-auth/login");
       return;
     }
 
@@ -128,7 +128,7 @@ function Dashboard() {
             .map((menu) => (
               <div className="col-12 col-sm-6 col-xl-3" key={menu.menu_id}>
                 <Link
-                  to={`/supplier/${menu.menu_routes}`}
+                  to={`/user-auth/${menu.menu_routes}`}
                   style={{ textDecoration: "none" }}
                 >
                   <article className="metric-card metric-primary">

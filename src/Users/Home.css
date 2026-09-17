@@ -1295,7 +1295,6 @@ body {
     font-size: 11px;
   }
 
-  /* शेवटचा item पूर्ण रुंदीमध्ये हवा असेल */
   .kay-fc-last {
     flex: 0 0 100%;
     max-width: 100%;

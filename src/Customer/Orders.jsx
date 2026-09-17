@@ -14,8 +14,6 @@ import { UseGlobalSearch } from "../Config/UseGlobalSearch";
 
 function Orders() {
   const [orderData, setorderData] = useState([]);
-  const [showDescriptionModal, setShowDescriptionModal] = useState(false);
-  const [selectedDescription, setSelectedDescription] = useState("");
   const [showModal, setShowModal] = useState(false);
   const { searchTerm, setSearchTerm, filteredData } = UseGlobalSearch(orderData);
 

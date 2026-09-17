@@ -667,7 +667,6 @@ export default function GerberUpload() {
                                                 setViewer({ open: true, side: "front", scale: 1, x: 0, y: 0 })
                                             }
                                         >
-                                            {/* १. प्लेन डायनॅमिक कलर बॅकराउंड (सर्वात मागे) */}
                                             {previewImages.pcb_bg?.[specifications.pcb_color.toLowerCase()] && (
                                                 <img
                                                     src={previewImages.pcb_bg[specifications.pcb_color.toLowerCase()]}
@@ -677,7 +676,6 @@ export default function GerberUpload() {
                                                 />
                                             )}
 
-                                            {/* २. बाकीचे सर्व ट्रान्सपरंट लेयर्स क्रमाने त्यावर */}
                                             {previewImages.top_copper && <img src={previewImages.top_copper} className="pcb-layer copper" style={{ zIndex: 2 }} alt="" />}
                                             {previewImages.top_mask && <img src={previewImages.top_mask} className="pcb-layer mask" style={{ zIndex: 3 }} alt="" />}
                                             {previewImages.outline && <img src={previewImages.outline} className="pcb-layer outline" style={{ zIndex: 4 }} alt="" />}
@@ -2522,7 +2520,6 @@ export default function GerberUpload() {
                     >
                         {viewer.side === "front" ? (
                             <>
-                                {/* १. प्लेन कलर बॅकराउंड (सर्वात मागे - zIndex: 1 किंवा 2) */}
                                 {previewImages.pcb_bg?.[specifications.pcb_color.toLowerCase()] && (
                                     <img
                                         src={previewImages.pcb_bg[specifications.pcb_color.toLowerCase()]}
@@ -2532,7 +2529,6 @@ export default function GerberUpload() {
                                     />
                                 )}
 
-                                {/* २. बाकीचे ट्रान्सपरंट लेयर्स क्रमाने त्यावर रेंडर होतील */}
                                 <img src={previewImages.top_copper} className="pcb-layer copper" style={{ zIndex: 3 }} />
                                 <img src={previewImages.top_mask} className="pcb-layer mask" style={{ zIndex: 4 }} />
                                 <img src={previewImages.outline} className="pcb-layer outline" style={{ zIndex: 5 }} />
@@ -2541,7 +2537,6 @@ export default function GerberUpload() {
                             </>
                         ) : (
                             <>
-                                {/* १. प्लेन कलर बॅकराउंड (सर्वात मागे) */}
                                 {previewImages.pcb_bg?.[specifications.pcb_color.toLowerCase()] && (
                                     <img
                                         src={previewImages.pcb_bg[specifications.pcb_color.toLowerCase()]}
@@ -2551,7 +2546,6 @@ export default function GerberUpload() {
                                     />
                                 )}
 
-                                {/* २. बाकीचे ट्रान्सपरंट लेयर्स क्रमाने त्यावर रेंडर होतील */}
                                 <img src={previewImages.bottom_copper} className="pcb-layer copper" style={{ zIndex: 3 }} />
                                 <img src={previewImages.bottom_mask} className="pcb-layer mask" style={{ zIndex: 4 }} />
                                 <img src={previewImages.outline} className="pcb-layer outline" style={{ zIndex: 5 }} />

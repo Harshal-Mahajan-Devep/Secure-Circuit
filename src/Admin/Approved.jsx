@@ -19,7 +19,7 @@ function Approved() {
 
     try {
       const response = await axios.get(
-        `${BASE_URL}admin/getdatawhere/tbl_orders/order_stage/7`
+        `${BASE_URL}admin/getdatawhere/tbl_orders/order_stage/8`
       );
 
       if (response.data.status) {

@@ -77,13 +77,11 @@ function Profile() {
 
     const companyFilled = profile.cust_company_name?.trim() !== "";
 
-    // फक्त जर कंपनीचं नाव पहिल्यांदाच (cust_profile_update == 0) भरलं जात असेल तर कन्फर्मेशन मॉडेल दाखवा
     if (profile.cust_profile_update == 0 && companyFilled) {
       setShowProfileConfirmModal(true);
       return;
     }
 
-    // इतर सर्व वेळी थेट प्रोफाइल सेव्ह करा
     saveProfile();
   };
 

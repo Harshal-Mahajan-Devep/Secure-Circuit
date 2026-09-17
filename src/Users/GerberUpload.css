@@ -395,16 +395,14 @@
   margin-bottom: 14px;
 }
 
-/* 1. एकाच ओळीत ठेवण्यासाठी flex-wrap: nowrap केले आहे */
 .pcb-preview-images-grid {
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 12px;
-  flex-wrap: nowrap !important; /* इमेजेस खाली जाणार नाहीत */
+  flex-wrap: nowrap !important; 
 }
 
-/* 2. दोन्ही इमेजेस ५०-५०% जागा घेतील */
 .pcb-preview-item {
   display: flex;
   flex-direction: column;
@@ -413,9 +411,8 @@
   min-width: 0;
 }
 
-/* 3. इमेज स्क्रीननुसार ऑटो-ॲडजस्ट होईल */
 .pcb-preview-item img {
-  max-width: 100%; /* fixed 400px ऐवजी 100% केले */
+  max-width: 100%; 
   width: 100%;
   height: auto;
   border-radius: 8px;
@@ -1288,7 +1285,6 @@
     flex-wrap: wrap;
   }
 
-  /* Fixed width हटवून Auto केली जेणेकरून मोबाइलवर स्क्रीनबाहेर जाणार नाही */
   .pcb-option-btn,
   .pcb-color-btn {
     font-size: 12px;
@@ -1349,7 +1345,7 @@
   }
 
   .pcb-option-btn {
-    flex: 1 1 calc(50% - 8px); /* मोबाइलवर २-२ च्या ग्रिडमध्ये सुटसुटीत दिसेल */
+    flex: 1 1 calc(50% - 8px); 
   }
 
   .pcb-input-size {
@@ -1651,7 +1647,7 @@
 
 /* JLCPCB Grid Layout for Panel Board Outline */
 .jlc-board-outline-grid {
-  border: 2px solid #ff00009a; /* मुख्य बाहेरची गुलाबी बॉर्डर */
+  border: 2px solid #ff00009a;
   box-shadow: 0 0 12px rgba(255, 0, 0, 0.3);
   background: #000000;
   transition: all 0.3s ease;
@@ -1659,9 +1655,9 @@
   display: grid;
 }
 
-/* आतील प्रत्येक Single PCB Cell */
+
 .jlc-grid-cell {
-  border: 1px solid #ff00009a; /* आतल्या ग्रिड रेषा */
+  border: 1px solid #ff00009a;
   box-sizing: border-box;
   width: 100%;
   height: 100%;

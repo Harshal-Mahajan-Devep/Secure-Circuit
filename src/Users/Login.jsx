@@ -334,7 +334,6 @@ function Login() {
 
               <div className="px-field-group" style={{ marginTop: "15px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  {/* Label मध्येच Input टाकल्याने Click कार्य करेल */}
                   <label
                     htmlFor="robotCheckbox"
                     style={{
@@ -354,7 +353,7 @@ function Login() {
                       checked={!!captchaToken}
                       onChange={handleCheckboxClick}
                       disabled={isVerifyingCaptcha}
-                      style={{ display: "none" }} // Native checkbox लपवला
+                      style={{ display: "none" }} 
                     />
 
                     {/* Custom UI Box */}

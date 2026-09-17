@@ -65,7 +65,7 @@ function Sidebar() {
         axios.get(`${BASE_URL}admin/getCountData/tbl_orders`),
         axios.get(`${BASE_URL}admin/getCountData/tbl_suppliers`),
         axios.get(`${BASE_URL}admin/getCountDataWhere/tbl_orders/order_stage/6`),
-        axios.get(`${BASE_URL}admin/getCountDataWhere/tbl_orders/order_stage/7`),
+        axios.get(`${BASE_URL}admin/getCountDataWhere/tbl_orders/order_stage/8`),
       ]);
 
       setCounts({

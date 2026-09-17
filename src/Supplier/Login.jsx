@@ -14,7 +14,7 @@ function Login() {
   useEffect(() => {
 
     if (supplier) {
-      navigate("/supplier/dashboard");
+      navigate("/user-auth/dashboard");
       return;
     }
 
@@ -54,7 +54,7 @@ function Login() {
       if (response.data.status) {
         localStorage.setItem("supplier", JSON.stringify(response.data.supplier));
 
-        window.location.href = "/supplier/dashboard";
+        window.location.href = "/user-auth/dashboard";
       } else {
         toast.error(response.data.message);
       }

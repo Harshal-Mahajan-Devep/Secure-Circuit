@@ -112,7 +112,7 @@ function Sidebar() {
         aria-label="Main navigation"
       >
         <div className="sidebar-header">
-          <Link className="brand-mark" to="/supplier/dashboard">
+          <Link className="brand-mark" to="/user-auth/dashboard">
             <span>
               <img
                 src={theme === "dark" ? logoDark : logoLight}
@@ -154,7 +154,7 @@ function Sidebar() {
             .map((menu) => (
               <NavLink
                 key={menu.menu_id}
-                to={`/supplier/${menu.menu_routes}`}
+                to={`/user-auth/${menu.menu_routes}`}
                 className={({ isActive }) =>
                   isActive ? "nav-link active-primary" : "nav-link"
                 }

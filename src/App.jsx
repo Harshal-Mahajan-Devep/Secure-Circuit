@@ -167,17 +167,17 @@ function MainApp() {
         </Route>
 
         {/* Supplier Login */}
-        <Route path="supplier/login" element={<SuppLogin />} />
-        <Route path="supplier/reset-password" element={<SuppResetpass />} />
+        <Route path="user-auth/login" element={<SuppLogin />} />
+        <Route path="user-auth/reset-password" element={<SuppResetpass />} />
 
 
         {/* Supplier */}
         <Route element={<SupplierLayout />}>
-          <Route path="/supplier/dashboard" element={<SuppDashboard />} />
-          <Route path="/supplier/profile" element={<SuppProfile />} />
-          <Route path="/supplier/orders" element={<SuppOrders />} />
-          <Route path="/supplier/quotations" element={<SuppQuotations />} />
-          <Route path="/supplier/dispatches" element={<SuppDispatches />} />
+          <Route path="/user-auth/dashboard" element={<SuppDashboard />} />
+          <Route path="/user-auth/profile" element={<SuppProfile />} />
+          <Route path="/user-auth/orders" element={<SuppOrders />} />
+          <Route path="/user-auth/quotations" element={<SuppQuotations />} />
+          <Route path="/user-auth/dispatches" element={<SuppDispatches />} />
         </Route>
       </Routes>
     </>

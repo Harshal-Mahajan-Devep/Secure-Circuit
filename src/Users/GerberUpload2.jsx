@@ -1624,7 +1624,6 @@ export default function GerberUpload() {
                                         </div>
                                     )}
 
-                                    {/* TAB 2: Actual 2D Gerber Preview (फक्त Gerber फाईल असेल तरच) */}
                                     {activeModalTab === "preview" && (gerberTopImg || gerberBottomImg) && (
                                         <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-between p-2 select-none">
                                             {/* Toolbar Controls */}

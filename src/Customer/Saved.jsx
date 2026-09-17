@@ -12,8 +12,6 @@ import "./style.css"
 function Saved() {
     const [saveData, setsaveData] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showDelete, setShowDelete] = useState(false);
-    const [deleteId, setDeleteId] = useState(null);
     const [showUndoModal, setShowUndoModal] = useState(false);
     const [removedQuote, setRemovedQuote] = useState(null);
 

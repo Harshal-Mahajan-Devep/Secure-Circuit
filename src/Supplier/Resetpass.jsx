@@ -83,7 +83,7 @@ function Resetpass() {
         toast.success(res.data.message);
 
         setTimeout(() => {
-          navigate("/supplier/login");
+          navigate("/user-auth/login");
         }, 1500);
       } else {
         toast.error(res.data.message);
@@ -149,7 +149,7 @@ function Resetpass() {
 
             <button
               className="admin-login-btn-blue"
-              onClick={() => navigate("/supplier/login")}
+              onClick={() => navigate("/user-auth/login")}
             >
               Back to Login
             </button>

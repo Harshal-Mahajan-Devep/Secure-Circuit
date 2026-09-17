@@ -5,7 +5,6 @@ import { BASE_URL } from "../Config/Base-url";
 function StageDrawer({ open, onClose, order }) {
     const timelineRef = useRef(null);
     const activeItemRef = useRef(null);
-    const [lineWidth, setLineWidth] = useState(0);
 
     const [stages, setStages] = useState([]);
     const [loading, setLoading] = useState(false);

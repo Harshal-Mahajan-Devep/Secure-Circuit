@@ -295,7 +295,7 @@ function Profile() {
                     src={
                       profile.staff_image
                         ? `${BASE_URL}public/Uploads/${profile.staff_image}`
-                        :defaultProfile
+                        : defaultProfile
                     }
                     alt={profile.staff_name}
                   />

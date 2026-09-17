@@ -12,7 +12,7 @@ function Header() {
     const supplierData = localStorage.getItem("supplier");
 
     if (!supplierData) {
-      navigate("/supplier/login");
+      navigate("/user-auth/login");
     }
 
     if (supplierData && supplierData !== "undefined") {
@@ -22,7 +22,7 @@ function Header() {
 
   const handleLogout = () => {
     localStorage.removeItem("supplier");
-    navigate("/supplier/login");
+    navigate("/user-auth/login");
   };
 
   const [theme, setTheme] = useState("light");
@@ -131,7 +131,7 @@ function Header() {
               </button>
               <ul className="dropdown-menu dropdown-menu-end">
                 <li>
-                  <Link className="dropdown-item" to="/supplier/profile">
+                  <Link className="dropdown-item" to="/user-auth/profile">
                     Profile
                   </Link>
                 </li>

@@ -162,7 +162,8 @@ function Staff() {
         `${BASE_URL}admin/updatedata/tbl_staff/staff_id/${staffId}`,
         {
           staff_status: status,
-        },
+          send_email: true,
+        }
       );
 
       if (response.data.status) {
@@ -208,6 +209,15 @@ function Staff() {
           : values.staff_menu,
         staff_status: values.staff_status,
       };
+
+      if (editId) {
+        payload.send_email = true;
+
+        response = await axios.post(
+          `${BASE_URL}admin/updatedata/tbl_staff/staff_id/${editId}`,
+          payload
+        );
+      }
 
       let response;
 

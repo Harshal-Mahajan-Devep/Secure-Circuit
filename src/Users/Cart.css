@@ -259,9 +259,9 @@
 /* Proceed Button Design */
 .pcb-btn-proceed {
   width: 100%;
-  background-color: #ffd814;
-  border: 1px solid #fcd200;
-  color: #0f172a;
+  background-color: #076d15;
+  border: 1px solid #076d15;
+  color: #fff;
   font-weight: 700;
   padding: 12px;
   border-radius: 20px;
@@ -272,8 +272,8 @@
 }
 
 .pcb-btn-proceed:hover:not(:disabled) {
-  background-color: #f7ca00;
-  border-color: #f2c200;
+  background-color: #0ca520;
+  border-color: #0ca520;
   transform: translateY(-1px);
 }
 
@@ -305,13 +305,11 @@
 }
 
 @media (min-width: 992px) {
-  /* सामान्य स्थितीत */
   .pcb-cart-sticky.normal {
     position: relative;
     top: 0;
   }
 
-  /* स्क्रोल करताना स्क्रीनवर फिक्स राहील */
   .pcb-cart-sticky.fixed {
     position: fixed;
     top: 20px;
@@ -319,7 +317,6 @@
     z-index: 10;
   }
 
-  /* फुटर जवळ आल्यावर फुटरच्या नेमके वर थांबेल (Hide होणार नाही) */
   .pcb-cart-sticky.bottom {
     position: fixed;
     bottom: 0;

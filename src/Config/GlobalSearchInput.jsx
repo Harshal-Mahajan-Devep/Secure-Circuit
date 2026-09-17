@@ -14,7 +14,7 @@ function GlobalSearchInput({
         const val = e.target.value;
         setInputValue(val);
         if (onChange) {
-            onChange(val); // Real-time typing वर शोधण्यासाठी
+            onChange(val);
         }
     };
 

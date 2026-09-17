@@ -8,12 +8,10 @@ function Quotations() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Approval Modal साठी State
   const [selectedOrderId, setSelectedOrderId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
 
-  // Remark Modal साठी नवीन State
   const [selectedRemark, setSelectedRemark] = useState("");
   const [showRemarkModal, setShowRemarkModal] = useState(false);
 
@@ -76,7 +74,6 @@ function Quotations() {
     setShowRemarkModal(false);
   };
 
-  // Confirmation नंतर चा प्रत्यक्ष Approve Call
   const confirmApprove = async () => {
     if (!selectedOrderId) return;
     setIsApproving(true);
@@ -85,7 +82,7 @@ function Quotations() {
       const res = await axios.post(
         `${BASE_URL}admin/updatedata/tbl_orders/order_id/${selectedOrderId}`,
         {
-          order_stage: "7",
+          order_stage: "8",
         }
       );
 
