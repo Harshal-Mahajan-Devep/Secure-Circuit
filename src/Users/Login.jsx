@@ -79,7 +79,7 @@ function Login() {
     try {
       setLoading(true);
       const res = await axios.post(`${BASE_URL}customer/login`, {
-        cust_email: formData.cust_email,
+        login: formData.cust_email,
         cust_password: formData.cust_password,
       });
 
@@ -241,11 +241,11 @@ function Login() {
           {activeTab === "login" && (
             <form onSubmit={handleLogin}>
               <div className="px-field-group">
-                <label>EMAIL</label>
+                <label>EMAIL ID / MOBILE NUMBER</label>
                 <input
-                  type="email"
+                  type="text"
                   name="cust_email"
-                  placeholder="name@domain.com"
+                  placeholder="name@domain.com / 9876543210"
                   value={formData.cust_email}
                   onChange={handleChange}
                   required
@@ -353,7 +353,7 @@ function Login() {
                       checked={!!captchaToken}
                       onChange={handleCheckboxClick}
                       disabled={isVerifyingCaptcha}
-                      style={{ display: "none" }} 
+                      style={{ display: "none" }}
                     />
 
                     {/* Custom UI Box */}
