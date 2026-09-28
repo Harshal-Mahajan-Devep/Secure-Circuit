@@ -683,6 +683,7 @@ function Orders() {
                   <table className="table table-bordered table-striped align-middle sc-cart-table m-0">
                     <thead>
                       <tr>
+                        <th>Gerber File</th>
                         <th>Basic Information</th>
                         <th>PCB Specifications</th>
                         <th>High Specs & Options</th>
@@ -692,12 +693,28 @@ function Orders() {
                     <tbody>
                       {cartItems.map((item, index) => (
                         <React.Fragment key={item.cart_id || index}>
+
                           <tr>
-                            <td colSpan={4} className="text-center py-2">
+                            <td colSpan={5} className="text-center py-2">
                               <h4>Order Number: {selectedOrder?.order_code}</h4>
                             </td>
                           </tr>
                           <tr>
+                            <td>
+                              {selectedOrder?.order_gerber_file ? (
+                                <a
+                                  href={`${BASE_URL}api/jlcpcb/download-gerber/${selectedOrder.order_gerber_file}`}
+                                  className="btn btn-sm btn-danger"
+                                >
+                                  <i className="fa-solid fa-download me-1"></i>
+                                  {selectedOrder.order_gerber_file}
+                                </a>
+                              ) : (
+                                <span className="text-muted">
+                                  No File
+                                </span>
+                              )}
+                            </td>
                             <td>
                               <div className="sc-tbl-row">
                                 <strong>Base Material:</strong>{" "}
