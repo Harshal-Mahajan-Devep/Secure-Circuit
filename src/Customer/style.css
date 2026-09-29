@@ -692,3 +692,201 @@
     font-size: 18px;
   }
 }
+/* ===============================
+   DESIGN / DISPATCH MODAL
+================================ */
+
+.design-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.48);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+}
+
+.design-modal-box {
+  width: 100%;
+  max-width: 625px;
+  background: #fff;
+
+  border-radius: 10px;
+  overflow: hidden;
+
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.25);
+
+  animation: designModalShow 0.2s ease-out;
+}
+
+@keyframes designModalShow {
+  from {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Header */
+
+.design-modal-header {
+  background: #1268ee;
+  color: #fff;
+
+  min-height: 112px;
+
+  padding: 25px 20px;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.design-modal-header h4 {
+  margin: 0;
+
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.staff-name {
+  margin-top: 10px;
+  font-size: 18px;
+}
+
+.design-modal-close {
+  border: 0;
+  background: transparent;
+  color: #fff;
+
+  font-size: 28px;
+
+  opacity: 0.65;
+
+  cursor: pointer;
+
+  padding: 5px 8px;
+}
+
+.design-modal-close:hover {
+  opacity: 1;
+}
+
+/* Body */
+
+.design-modal-body {
+  padding: 25px 20px 20px;
+}
+
+.design-form-group {
+  margin-bottom: 23px;
+}
+
+.design-form-group label {
+  display: block;
+
+  font-size: 19px;
+  font-weight: 600;
+
+  margin-bottom: 10px;
+}
+
+.design-form-group label span {
+  color: #dc3545;
+}
+
+.design-form-control {
+  min-height: 47px;
+
+  border: 1px solid #d5dce5;
+
+  border-radius: 7px;
+
+  font-size: 18px;
+}
+
+.design-form-control:focus,
+.design-comment:focus {
+  border-color: #1268ee;
+  box-shadow: 0 0 0 0.15rem rgba(18, 104, 238, 0.12);
+}
+
+.design-form-group small {
+  display: block;
+
+  margin-top: 8px;
+
+  color: #6c757d;
+
+  font-size: 16px;
+}
+
+.design-comment {
+  width: 100%;
+
+  min-height: 137px;
+
+  resize: vertical;
+
+  border: 1px solid #d5dce5;
+
+  border-radius: 7px;
+
+  padding: 12px 15px;
+
+  font-size: 18px;
+}
+
+/* Footer */
+
+.design-modal-footer {
+  border-top: 1px solid #e5e5e5;
+
+  padding: 20px;
+
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.design-close-btn {
+  background: #6c757d;
+  color: #fff;
+
+  padding: 9px 17px;
+
+  font-size: 18px;
+
+  border-radius: 8px;
+}
+
+.design-close-btn:hover {
+  background: #5c636a;
+  color: #fff;
+}
+
+.design-save-btn {
+  background: #fff;
+
+  color: #1268ee;
+
+  border: 1px solid #1268ee;
+
+  padding: 9px 17px;
+
+  font-size: 18px;
+
+  border-radius: 8px;
+}
+
+.design-save-btn:hover {
+  background: #1268ee;
+  color: #fff;
+}
