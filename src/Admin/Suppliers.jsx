@@ -223,7 +223,7 @@ function Suppliers() {
       let response;
 
       const payload = {
-        supp_menu: '1,4,5,7',
+        supp_menu: '1,4,5,6,7',
         supp_company_name: values.supp_company_name,
         supp_contact_person: values.supp_contact_person,
         supp_email: values.supp_email,

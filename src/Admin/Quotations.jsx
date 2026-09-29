@@ -41,7 +41,7 @@ function Quotations() {
         <div className="page-heading">
           <div className="page-heading-copy">
             <span className="page-icon">
-              <i className="bi bi-file-text" aria-hidden="true"></i>
+              <i className="bi bi-file-text " aria-hidden="true"></i>
             </span>
             <div>
               <p className="eyebrow mb-1">All</p>
@@ -60,6 +60,7 @@ function Quotations() {
             >
               <thead>
                 <tr className="text-center">
+                  <th>Action</th>
                   <th>Order Code</th>
                   <th>Quotation</th>
                   <th>Remark</th>
@@ -89,6 +90,7 @@ function Quotations() {
                   quotations.map((item, index) => (
                     <tr key={item.order_id || index} className="text-center">
                       <td className="fw-bold">{item.order_code || "N/A"}</td>
+                      <td></td>
 
                       <td>
                         <a

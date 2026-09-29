@@ -22,6 +22,7 @@ function Sidebar() {
   const [counts, setCounts] = useState({
     orders: 0,
     quotations: 0,
+    approved: 0,
     dispatches: 0,
   });
 
@@ -60,12 +61,15 @@ function Sidebar() {
 
 
   const getCounts = async () => {
+    if (!SuppId) return;
+
     try {
-      const res = await axios.get(
+      // Supplier Orders
+      const ordersResponse = await axios.get(
         `${BASE_URL}supplier/getSupplierOrders/${SuppId}`
       );
 
-      const orders = res.data.data || [];
+      const orders = ordersResponse.data.data || [];
 
       const supplierOrders = orders.filter((item) => {
         if (!item.order_transfer_supplier) return false;
@@ -76,13 +80,43 @@ function Sidebar() {
           .includes(String(SuppId));
       });
 
+      // Supplier Quotations
+      const quotationsResponse = await axios.get(
+        `${BASE_URL}admin/getdatawhere/tbl_supplier_quotes/sq_supp_id/${SuppId}`
+      );
+
+      const quotationData = quotationsResponse.data.status
+        ? Array.isArray(quotationsResponse.data.data)
+          ? quotationsResponse.data.data
+          : [quotationsResponse.data.data]
+        : [];
+
+      // Approved Orders
+      const approvedResponse = await axios.get(
+        `${BASE_URL}admin/getdatawhere/tbl_orders/order_quote_supplier/${SuppId}`
+      );
+
+      const approvedOrders = approvedResponse.data.status
+        ? Array.isArray(approvedResponse.data.data)
+          ? approvedResponse.data.data
+          : [approvedResponse.data.data]
+        : [];
+
+      // Only order_stage 8 to 12
+      const approvedCount = approvedOrders.filter((item) => {
+        const stage = Number(item.order_stage);
+
+        return stage >= 8 && stage <= 12;
+      }).length;
+
       setCounts({
         orders: supplierOrders.length,
-        quotations: 0,
+        quotations: quotationData.length,
+        approved: approvedCount,
         dispatches: 0,
       });
     } catch (error) {
-      console.log(error);
+      console.log("Count Fetch Error:", error);
     }
   };
 
@@ -93,6 +127,9 @@ function Sidebar() {
 
       case "quotations":
         return counts.quotations;
+
+      case "approved":
+        return counts.approved;
 
       case "dispatches":
         return counts.dispatches;

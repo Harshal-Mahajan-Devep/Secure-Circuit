@@ -49,16 +49,26 @@ function Orders() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploading, setUploading] = useState(false);
 
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const [attachmentPreview, setAttachmentPreview] = useState("");
+  const [supplierQuoteStatus, setSupplierQuoteStatus] = useState({});
+
+
+
+
   // Formik validation for Order Quotation Update
   const formik = useFormik({
     initialValues: {
       order_quotation: "",
       order_remark: "",
+      order_quote_supplier: "",
     },
     enableReinitialize: true,
     validationSchema: Yup.object({
       order_quotation: Yup.string().required("Quotation file is required"),
       order_remark: Yup.string().required("Remark is required"),
+      order_quote_supplier: Yup.string().required("Supplier is required"),
     }),
     onSubmit: async (values) => {
       try {
@@ -66,6 +76,7 @@ function Orders() {
           order_id: selectedOrder?.order_id,
           order_quotation: values.order_quotation,
           order_remark: values.order_remark,
+          order_quote_supplier: values.order_quote_supplier,
           order_stage: "6",
         };
 
@@ -94,6 +105,7 @@ function Orders() {
     formik.setValues({
       order_quotation: order.order_quotation || "",
       order_remark: order.order_remark || "",
+      order_quote_supplier: order.order_quote_supplier || "",
     });
   };
 
@@ -138,6 +150,41 @@ function Orders() {
     setShowModal(false);
     setSelectedOrder(null);
     setUploadProgress(0);
+  };
+  const checkSupplierQuotes = async (orders) => {
+    try {
+      const quoteStatus = {};
+
+      await Promise.all(
+        orders.map(async (order) => {
+          try {
+            const res = await axios.get(
+              `${BASE_URL}admin/getdatawhere/tbl_supplier_quotes/sq_order_id/${order.order_id}`
+            );
+
+            if (res.data.status && res.data.data) {
+              const data = Array.isArray(res.data.data)
+                ? res.data.data
+                : [res.data.data];
+
+              const validQuotes = data.filter(
+                (quote) => quote.sq_quote
+              );
+
+              quoteStatus[order.order_id] = validQuotes.length > 0;
+            } else {
+              quoteStatus[order.order_id] = false;
+            }
+          } catch (error) {
+            quoteStatus[order.order_id] = false;
+          }
+        })
+      );
+
+      setSupplierQuoteStatus(quoteStatus);
+    } catch (error) {
+      console.log("Supplier Quote Status Error:", error);
+    }
   };
 
   const fetchCartDetails = async (cartId) => {
@@ -235,52 +282,215 @@ function Orders() {
     }
   };
 
-  const sendMessage = async () => {
-    if (message.trim() === "") return;
+  // const sendMessage = async () => {
+  //   if (message.trim() === "") return;
 
+  //   if (!editMessageId) {
+  //     toast.error("Please select a message to edit.");
+  //     return;
+  //   }
+
+  //   try {
+  //     await axios.post(
+  //       `${BASE_URL}admin/updatedata/tbl_query/que_id/${editMessageId}`,
+  //       {
+  //         que_edit_message: message,
+  //       }
+  //     );
+
+  //     toast.success("Message Updated");
+  //     setEditMessageId(null);
+  //     setMessage("");
+  //     getMessages(selectedOrder.order_id);
+  //   } catch (err) {
+  //     toast.error("Update Failed");
+  //   }
+  // };
+
+  const sendMessage = async () => {
     if (!editMessageId) {
       toast.error("Please select a message to edit.");
       return;
     }
 
+    if (message.trim() === "" && !selectedFile && !attachmentPreview) {
+      toast.error("Message or attachment is required.");
+      return;
+    }
+
     try {
-      await axios.post(
+      setUploadingAttachment(true);
+
+      let attachmentName = attachmentPreview;
+
+      // ==========================================
+      // NEW FILE UPLOAD
+      // ==========================================
+      if (selectedFile) {
+        const formData = new FormData();
+        formData.append("file", selectedFile);
+
+        const uploadRes = await axios.post(
+          `${BASE_URL}admin/fileupload`,
+          formData,
+          {
+            headers: {
+              "Content-Type": "multipart/form-data",
+            },
+          }
+        );
+
+        if (!uploadRes.data.status || !uploadRes.data.files) {
+          toast.error(uploadRes.data.message || "File upload failed");
+          return;
+        }
+
+        attachmentName = Object.values(uploadRes.data.files)[0];
+      }
+
+      // ==========================================
+      // UPDATE QUERY
+      // ==========================================
+      const res = await axios.post(
         `${BASE_URL}admin/updatedata/tbl_query/que_id/${editMessageId}`,
         {
-          que_edit_message: message,
-        }
-      );
+          que_edit_message: message.trim(),
 
-      toast.success("Message Updated");
-      setEditMessageId(null);
-      setMessage("");
-      getMessages(selectedOrder.order_id);
-    } catch (err) {
-      toast.error("Update Failed");
-    }
-  };
-
-  const changeStatus = async (id, status) => {
-    try {
-      const res = await axios.post(
-        `${BASE_URL}admin/updatedata/tbl_query/que_id/${id}`,
-        {
-          que_status: status,
+          // Keep old attachment if new file not selected
+          que_attachment: attachmentName || "",
         }
       );
 
       if (res.data.status) {
-        toast.success("Status Updated");
-        getMessages(selectedOrder.order_id);
+        toast.success("Message Updated Successfully");
+
+        setEditMessageId(null);
+        setMessage("");
+        setSelectedFile(null);
+        setAttachmentPreview("");
+
+        const fileInput = document.getElementById("admin-query-file-upload");
+
+        if (fileInput) {
+          fileInput.value = "";
+        }
+
+        await getMessages(selectedOrder.order_id);
+      } else {
+        toast.error(res.data.message || "Update Failed");
+      }
+    } catch (err) {
+      console.error("Update Message Error:", err);
+      toast.error("Update Failed");
+    } finally {
+      setUploadingAttachment(false);
+    }
+  };
+  // const changeStatus = async (id, status) => {
+  //   try {
+  //     const res = await axios.post(
+  //       `${BASE_URL}admin/updatedata/tbl_query/que_id/${id}`,
+  //       {
+  //         que_status: status,
+  //       }
+  //     );
+
+  //     if (res.data.status) {
+  //       toast.success("Status Updated");
+  //       getMessages(selectedOrder.order_id);
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  // const editMessage = (msg) => {
+  //   setEditMessageId(msg.que_id);
+  //   setMessage(msg.que_edit_message || msg.que_message);
+  // };
+
+  const changeStatus = async (id, status) => {
+    try {
+      const payload = {
+        que_status: status,
+      };
+
+      // Forward to Customer
+      if (Number(status) === 1) {
+        payload.que_cust_read = 0;
+      }
+
+      // Inforward
+      if (Number(status) === 0) {
+        payload.que_cust_read = 1;
+      }
+
+      const res = await axios.post(
+        `${BASE_URL}admin/updatedata/tbl_query/que_id/${id}`,
+        payload
+      );
+
+      if (res.data.status) {
+        toast.success(
+          Number(status) === 1
+            ? "Message Forwarded to Customer"
+            : "Message Inforwarded"
+        );
+
+        await getMessages(selectedOrder.order_id);
+        await getorderData();
+      } else {
+        toast.error(res.data.message || "Status Update Failed");
       }
     } catch (error) {
-      console.log(error);
+      console.error("Change Status Error:", error);
+      toast.error("Status Update Failed");
     }
   };
 
   const editMessage = (msg) => {
     setEditMessageId(msg.que_id);
-    setMessage(msg.que_edit_message || msg.que_message);
+
+    // Message text
+    setMessage(msg.que_edit_message || msg.que_message || "");
+
+    // Existing attachment
+    if (msg.que_attachment) {
+      setAttachmentPreview(msg.que_attachment);
+    } else {
+      setAttachmentPreview(null);
+    }
+
+    setSelectedFile(null);
+  };
+  const handleQueryFileChange = (e) => {
+    const file = e.target.files[0];
+
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5 MB");
+      e.target.value = "";
+      return;
+    }
+
+    const allowedTypes = [
+      "image/png",
+      "image/jpeg",
+      "image/jpg",
+      "application/pdf",
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG and PDF files are allowed");
+      e.target.value = "";
+      return;
+    }
+
+    setSelectedFile(file);
+
+    // New file selected → old attachment preview remove
+    setAttachmentPreview(null);
   };
 
   const getCustomerData = async () => {
@@ -297,14 +507,36 @@ function Orders() {
     }
   };
 
+  // const getorderData = async () => {
+  //   setLoading(true);
+
+  //   try {
+  //     const response = await axios.get(`${BASE_URL}admin/getAdminOrders`);
+
+  //     if (response.data.status) {
+  //       setorderData(response.data.data);
+  //     }
+  //   } catch (error) {
+  //     console.log(error);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
   const getorderData = async () => {
     setLoading(true);
 
     try {
-      const response = await axios.get(`${BASE_URL}admin/getAdminOrders`);
+      const response = await axios.get(
+        `${BASE_URL}admin/getAdminOrders`
+      );
 
       if (response.data.status) {
-        setorderData(response.data.data);
+        const orders = response.data.data;
+
+        setorderData(orders);
+
+        // Check supplier quotation status
+        checkSupplierQuotes(orders);
       }
     } catch (error) {
       console.log(error);
@@ -375,19 +607,58 @@ function Orders() {
     }
   };
 
+  // const getQuotations = async (order) => {
+  //   setSelectedOrder(order);
+  //   setShowQuotationModal(true);
+  //   setQuotationLoading(true);
+
+  //   try {
+  //     const res = await axios.get(
+  //       `${BASE_URL}admin/getdatawhere/tbl_supplier_quotes/sq_order_id/${order.order_id}`
+  //     );
+
+  //     if (res.data.status) {
+  //       setQuotations(Array.isArray(res.data.data) ? res.data.data : [res.data.data]);
+  //     } else {
+  //       setQuotations([]);
+  //     }
+  //   } catch (err) {
+  //     console.log("Quotation Fetch Error:", err);
+  //     toast.error("Failed to fetch quotations");
+  //     setQuotations([]);
+  //   } finally {
+  //     setQuotationLoading(false);
+  //   }
+  // };
+
   const getQuotations = async (order) => {
+    console.log("SELECTED ORDER:", order);
+    console.log("ORDER ID:", order.order_id);
+
     setSelectedOrder(order);
     setShowQuotationModal(true);
     setQuotationLoading(true);
 
     try {
-      const res = await axios.get(
-        `${BASE_URL}admin/getdatawhere/tbl_supplier_quotes/sq_order_id/${order.order_id}`
-      );
+      const url = `${BASE_URL}admin/getdatawhere/tbl_supplier_quotes/sq_order_id/${order.order_id}`;
 
-      if (res.data.status) {
-        setQuotations(Array.isArray(res.data.data) ? res.data.data : [res.data.data]);
+      console.log("QUOTATION API URL:", url);
+
+      const res = await axios.get(url);
+
+      console.log("QUOTATION API RESPONSE:", res.data);
+      console.log("QUOTATION DATA:", res.data?.data);
+
+      if (res.data.status && res.data.data) {
+        const data = Array.isArray(res.data.data)
+          ? res.data.data
+          : [res.data.data];
+
+        console.log("FINAL QUOTATIONS:", data);
+
+        setQuotations(data);
       } else {
+        console.log("NO QUOTATION FOUND");
         setQuotations([]);
       }
     } catch (err) {
@@ -398,7 +669,6 @@ function Orders() {
       setQuotationLoading(false);
     }
   };
-
   return (
     <>
       <div className="container-fluid px-3 px-lg-4 py-4">
@@ -441,7 +711,7 @@ function Orders() {
                   <th>Activity</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="activity-date-time">
                 {loading ? (
                   <TableLoader rows={6} columns={4} />
                 ) : orderData.length > 0 ? (
@@ -467,7 +737,7 @@ function Orders() {
                                   setShowSupplierModal(true);
                                 }}
                               >
-                                <i className="bi bi-building me-1"></i>
+                                <i className="bi bi-building me-1 query-icon"></i>
                                 RFQ
                               </button>
 
@@ -491,7 +761,7 @@ function Orders() {
                                     }}
                                     disabled={Number(order.order_stage) <= 7}
                                   >
-                                    <i className="fa-regular fa-circle-question"></i>
+                                    <i className="fa-regular fa-circle-question query-icon"></i>
                                     Query
                                   </button>
 
@@ -512,10 +782,10 @@ function Orders() {
                             </div>
 
                             <button
-                              className="btn btn-sm btn-outline-danger mt-2"
+                              className="btn btn-sm btn-outline-danger mt-2 "
                               onClick={() => handleOpenQuoteModal(order)}
                             >
-                              <i className={`fa-solid ${order.order_quotation ? "fa-pen-to-square" : "fa-upload"} me-1`}></i>
+                              <i className={`fa-solid ${order.order_quotation ? "fa-pen-to-square query-icon  " : "fa-upload query-icon"} me-1`}></i>
                               {order.order_quotation ? "Edit Quote" : "Upload Quote"}
                             </button>
                           </td>
@@ -591,27 +861,96 @@ function Orders() {
                                 {order.cust_code}
                               </span>
                             </div>
-                            <span className="fw-semibold">Received Quote:</span>{" "}
+                            {/* <span className="fw-semibold">Supplier  Quote:</span>{" "}
                             <span
                               className="text-primary fw-bold"
                               style={{ cursor: "pointer", fontSize: "16px" }}
                               onClick={() => getQuotations(order)}
                             >
                               Received Supplier Quotations
-                            </span> <br />
-                            <span className="fw-semibold">Sended Quote:</span>{" "}
+                            </span>  */}
+
+
+
+                            {/* <span className="fw-semibold">Supplier Quote:</span>{" "}
+
+{true ? (
+  <span
+    className="text-success fw-bold"
+    style={{ cursor: "pointer", fontSize: "16px" }}
+    onClick={() => getQuotations(order)}
+  >
+    View Quote
+  </span>
+) : (
+  <span className="text-danger fw-bold">
+    No Quote
+  </span>
+)} */}
+
+                            {/* <span className="fw-semibold">Supplier Quote:</span>{" "}
+
+{order.order_quotation ? (
+  <span
+    className="text-success fw-bold"
+    style={{
+      cursor: "pointer",
+      fontSize: "16px",
+    }}
+    onClick={() => getQuotations(order)}
+  >
+    View Quote
+  </span>
+) : (
+  <span className="text-danger fw-bold">
+     View Quote
+  </span>
+)} */}
+
+
+
+
+                            <span className="fw-semibold">Supplier Quote:</span>{" "}
+
+                            {supplierQuoteStatus[order.order_id] ? (
+                              <span
+                                className="text-success fw-bold"
+                                style={{
+                                  cursor: "pointer",
+                                  fontSize: "16px",
+                                }}
+                                onClick={() => getQuotations(order)}
+                              >
+                                View Quote
+                              </span>
+                            ) : (
+                              <span
+                                className="text-danger fw-bold"
+                                style={{ fontSize: "16px" }}
+                              >
+                                No Quote
+                              </span>
+                            )}
+
+
+
+                            <br />
+
+
+                            <span className="fw-semibold">Customer  Quote:</span>{" "}
                             {order.order_quotation ? (
                               <a
                                 href={`${BASE_URL}public/Uploads/${order.order_quotation}`}
-                                className="text-danger fw-bold text-decoration-none"
+                                className="text-primary fw-bold text-decoration-none"
                                 style={{ cursor: "pointer", fontSize: "16px" }}
                                 target="_blank"
                               >
-                                Sended Customer Quotations
+                                View Quote
                               </a>
                             ) : (
-                              <span className="text-danger fw-bold">No Sended Quote</span>
+                              <span className="text-danger fw-bold">No Quote</span>
                             )}
+
                           </td>
 
                           {["1", "2", "3"].includes(adminrole) && (
@@ -623,13 +962,13 @@ function Orders() {
                                   setShowStageDrawer(true);
                                 }}
                               >
-                                <i className="fas fa-route me-2"></i>
+                                <i className="fas fa-route me-2 query-icon"></i>
                                 Tracking
                               </button>
                             </td>
                           )}
 
-                          <td className="text-start">
+                          <td className="text-start ">
                             <span className="fw-semibold">Created Date:</span>{" "}
                             {order.order_request_date} <br />{" "}
                             <span className="fw-semibold">Created Time:</span>{" "}
@@ -968,6 +1307,7 @@ function Orders() {
                               <i className="fa-solid fa-ellipsis-vertical"></i>
                             </button>
 
+
                             <ul className="dropdown-menu">
                               {(msg.que_send === "customer" || msg.que_send === "supplier") && (
                                 <li>
@@ -1009,7 +1349,7 @@ function Orders() {
                             </ul>
                           </div>
 
-                          <div>
+                          {/* <div>
                             {msg.que_edit_message || msg.que_message}
                             <div
                               style={{
@@ -1046,6 +1386,110 @@ function Orders() {
                                   : "Inforward"}
                               </small>
                             </div>
+                          </div> */}
+                          <div className="chat-message-content">
+
+                            {/* ================= MESSAGE ================= */}
+                            {(msg.que_edit_message || msg.que_message) && (
+                              <div className="chat-message-text">
+                                {msg.que_edit_message || msg.que_message}
+                              </div>
+                            )}
+
+                            {/* ================= ATTACHMENT ================= */}
+                            {msg.que_attachment && (() => {
+                              const attachment = msg.que_attachment;
+
+                              const attachmentUrl =
+                                `${BASE_URL}public/Uploads/${attachment}`;
+
+                              const isImage =
+                                /\.(jpg|jpeg|png|gif|webp)$/i.test(attachment);
+
+                              const isPdf =
+                                /\.pdf$/i.test(attachment);
+
+                              if (isImage) {
+                                return (
+                                  <div className="chat-attachment-image">
+                                    <a
+                                      href={attachmentUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                    >
+                                      <img
+                                        src={attachmentUrl}
+                                        alt="Query Attachment"
+                                        className="chat-image-preview"
+                                      />
+                                    </a>
+                                  </div>
+                                );
+                              }
+
+                              if (isPdf) {
+                                return (
+                                  <a
+                                    href={attachmentUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="chat-pdf-attachment"
+                                  >
+                                    <div className="chat-pdf-icon">
+                                      <i className="fa-solid fa-file-pdf"></i>
+                                    </div>
+
+                                    <div className="chat-pdf-details">
+                                      <span className="chat-pdf-title">
+                                        PDF Attachment
+                                      </span>
+
+                                      <span className="chat-pdf-name">
+                                        {attachment}
+                                      </span>
+                                    </div>
+
+                                    <i className="fa-solid fa-download chat-pdf-download"></i>
+                                  </a>
+                                );
+                              }
+
+                              return (
+                                <a
+                                  href={attachmentUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="chat-file-attachment"
+                                >
+                                  <i className="fa-solid fa-paperclip"></i>
+                                  {attachment}
+                                </a>
+                              );
+                            })()}
+
+                            {/* ================= STATUS ================= */}
+                            <div className="chat-message-meta">
+
+                              {msg.que_edit_message && (
+                                <small className="chat-edited-label">
+                                  Edited
+                                </small>
+                              )}
+
+                              <small
+                                className={
+                                  msg.que_status === 1
+                                    ? "chat-forward-label"
+                                    : "chat-inforward-label"
+                                }
+                              >
+                                {msg.que_status === 1
+                                  ? "Forward"
+                                  : "Inforward"}
+                              </small>
+
+                            </div>
+
                           </div>
 
                           <span className="chat-time">
@@ -1065,11 +1509,40 @@ function Orders() {
                   <div ref={messagesEndRef}></div>
                 </div>
 
-                <div className="chat-footer">
+                {/* <div className="chat-footer">
+                   <label
+    htmlFor="query-file-upload"
+    className="chat-attach-btn"
+    title="Upload Photo / PDF"
+  >
+    <i className="fa-solid fa-paperclip"></i>
+  </label>
+    <input
+    id="query-file-upload"
+    type="file"
+    accept="image/png,image/jpeg,image/jpg,application/pdf"
+    style={{ display: "none" }}
+    onChange={(e) => {
+      const file = e.target.files[0];
+
+      if (!file) return;
+
+      // 5 MB limit
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5 MB");
+        e.target.value = "";
+        return;
+      }
+
+      setSelectedFile(file);
+    }}
+  />
+  
                   <input
                     type="text"
                     className="chat-input"
-                    disabled={!editMessageId}
+                    // disabled={!editMessageId}
+                    disabled={editMessageId === null}
                     placeholder={
                       editMessageId
                         ? "Edit message..."
@@ -1086,7 +1559,96 @@ function Orders() {
                   >
                     <i className="fa-solid fa-floppy-disk"></i>
                   </button>
+                </div> */}
+
+                <div className="chat-footer">
+
+                  {/* Existing / New Attachment */}
+                  {(attachmentPreview || selectedFile) && (
+                    <div className="chat-edit-attachment">
+
+                      <div className="chat-edit-attachment-icon">
+                        {selectedFile?.type?.startsWith("image/") ? (
+                          <i className="fa-solid fa-image"></i>
+                        ) : (
+                          <i className="fa-solid fa-file-pdf"></i>
+                        )}
+                      </div>
+
+                      <div className="chat-edit-attachment-info">
+
+                        <span className="chat-edit-attachment-label">
+                          {selectedFile ? "New Attachment" : "Current Attachment"}
+                        </span>
+
+                        <span className="chat-edit-attachment-name">
+                          {selectedFile
+                            ? selectedFile.name
+                            : attachmentPreview}
+                        </span>
+
+                      </div>
+
+                      {/* Remove attachment */}
+                      <button
+                        type="button"
+                        className="chat-edit-attachment-remove"
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setAttachmentPreview(null);
+                        }}
+                        title="Remove attachment"
+                      >
+                        <i className="fa-solid fa-xmark"></i>
+                      </button>
+
+                    </div>
+                  )}
+
+                  {/* File Upload */}
+                  <label
+                    htmlFor="query-file-upload"
+                    className="chat-attach-btn"
+                    title="Change Attachment"
+                  >
+                    <i className="fa-solid fa-paperclip"></i>
+                  </label>
+
+                  <input
+                    id="query-file-upload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/jpg,application/pdf"
+                    style={{ display: "none" }}
+                    onChange={handleQueryFileChange}
+                  />
+
+                  {/* Edit Message */}
+                  <input
+                    type="text"
+                    className="chat-input"
+                    disabled={editMessageId === null}
+                    placeholder={
+                      editMessageId
+                        ? "Edit message..."
+                        : "Click 'Edit' on a message..."
+                    }
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                  />
+
+                  {/* Save */}
+                  <button
+                    type="button"
+                    className="chat-send-btn"
+                    onClick={sendMessage}
+                    disabled={editMessageId === null}
+                    title="Save Changes"
+                  >
+                    <i className="fa-solid fa-floppy-disk"></i>
+                  </button>
+
                 </div>
+
               </div>
             </div>
           </div>
@@ -1232,6 +1794,46 @@ function Orders() {
               <form onSubmit={formik.handleSubmit}>
                 <div className="model-add-edit-modal-body">
                   <div className="row g-3">
+
+
+                    <div className="col-md-12">
+                      <label className="order-form-label mt-3">
+                        Quote Supplier <span className="text-danger">*</span>
+                      </label>
+
+                      <select
+                        name="order_quote_supplier"
+                        className={`form-select ${formik.touched.order_quote_supplier && formik.errors.order_quote_supplier
+                          ? "is-invalid"
+                          : ""
+                          }`}
+                        value={formik.values.order_quote_supplier}
+                        onChange={formik.handleChange}
+                        onBlur={formik.handleBlur}
+                      >
+                        <option value="">Select Supplier</option>
+
+                        {supplierData
+                          .filter((supplier) => Number(supplier.supp_status) === 1)
+                          .map((supplier) => (
+                            <option
+                              key={supplier.supp_id}
+                              value={supplier.supp_id}
+                            >
+                              {supplier.supp_contact_person} - {supplier.supp_company_name}
+                            </option>
+                          ))}
+                      </select>
+
+                      {formik.touched.order_quote_supplier &&
+                        formik.errors.order_quote_supplier && (
+                          <div className="invalid-feedback d-block">
+                            {formik.errors.order_quote_supplier}
+                          </div>
+                        )}
+                    </div>
+
+
                     <div className="col-md-12">
                       <div className="simple-file-box">
                         <label className="simple-file-label">
@@ -1295,6 +1897,7 @@ function Orders() {
                         )}
                       </div>
                     </div>
+
 
                     <div className="col-md-12">
                       <label className="order-form-label mt-3">

@@ -29,6 +29,7 @@ export default function GerberUpload() {
     const footerRef = useRef(null);
     const qtyRef = useRef(null);
     const fileInputRef = useRef(null);
+    const confirmProductionRef = useRef(null);
 
     // State for Modal
     const [showPdfPreviewModal, setShowPdfPreviewModal] = useState(false);
@@ -62,7 +63,9 @@ export default function GerberUpload() {
     const [viaPlating, setViaPlating] = useState("Not Specified");
     const [minViaHole, setMinViaHole] = useState("0.3mm (0.4 / 0.45mm)");
     const [outlineTolerance, setOutlineTolerance] = useState("±0.2mm (Regular)");
-    const [confirmFile, setConfirmFile] = useState("No");
+    const [confirmFile, setConfirmFile] = useState("");
+    const [showConfirmProductionModal, setShowConfirmProductionModal] = useState(false);
+    const [confirmFileError, setConfirmFileError] = useState(false);
     const [markOnPcb, setMarkOnPcb] = useState("Remove Mark");
     const [electricalTest, setElectricalTest] = useState("Flying Probe Fully Test");
     const [goldFingers, setGoldFingers] = useState("No");
@@ -411,6 +414,28 @@ export default function GerberUpload() {
 
 
     const handleSaveQuote = async () => {
+
+
+        if (!confirmFile) {
+
+            setConfirmFileError(true);
+            confirmProductionRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "center"
+            });
+
+            setTimeout(() => {
+                const firstButton =
+                    confirmProductionRef.current?.querySelector(
+                        ".pcb-highspec-btn"
+                    );
+
+                firstButton?.focus();
+            }, 400);
+
+            return;
+        }
+
         if (!uploadedFileName || !gerberToken) {
             toast.error("Please upload a Gerber file first before saving to cart!");
             return;
@@ -1074,33 +1099,77 @@ export default function GerberUpload() {
                                 </div>
 
                                 {/* Confirm Production File */}
-                                <div className="pcb-highspec-row">
+                                <div
+                                    className="pcb-highspec-row"
+                                    ref={confirmProductionRef}
+                                >
                                     <label className="pcb-highspec-label">
                                         Confirm Production File
                                         <i className="fa-regular fa-circle-question pcb-highspec-help"></i>
                                     </label>
+
                                     <div className="pcb-highspec-options-wrapper">
+
                                         <div className="pcb-highspec-options">
-                                            {["No", "Yes"].map((cf) => (
-                                                <button
-                                                    key={cf}
-                                                    type="button"
-                                                    className={`pcb-highspec-btn ${confirmFile === cf ? "active" : ""}`}
-                                                    onClick={() => setConfirmFile(cf)}
-                                                >
-                                                    {cf}
-                                                </button>
-                                            ))}
+
+                                            {/* NO */}
+                                            <button
+                                                type="button"
+                                                className={`pcb-highspec-btn ${confirmFile === "No" ? "active" : ""
+                                                    }`}
+                                                onClick={() => {
+                                                    setConfirmFile("No");
+                                                    setConfirmFileError(false);
+                                                }}
+                                            >
+                                                No
+                                            </button>
+
+                                            {/* YES */}
+                                            <button
+                                                type="button"
+                                                className={`pcb-highspec-btn ${confirmFile === "Yes" ? "active" : ""
+                                                    }`}
+                                                onClick={() => {
+                                                    setShowConfirmProductionModal(true);
+                                                    setConfirmFileError(false);
+                                                }}
+                                            >
+                                                Yes
+                                            </button>
+
                                         </div>
 
-                                        <div className="pcb-notice-label-wrapper">
-                                            <span className={`pcb-notice-badge ${confirmFile === "Yes" ? "badge-warning" : "badge-info"}`}>
-                                                <i className={`fa-solid ${confirmFile === "Yes" ? "fa-circle-info" : "fa-circle-check"}`}></i>
-                                                {confirmFile === "No"
-                                                    ? "Means, Data directly go for Production"
-                                                    : "Means, Data need approval before production"}
-                                            </span>
-                                        </div>
+                                        {/* Notice */}
+                                        {confirmFile && (
+                                            <div className="pcb-notice-label-wrapper">
+                                                <span
+                                                    className={`pcb-notice-badge ${confirmFile === "Yes"
+                                                        ? "badge-warning"
+                                                        : "badge-info"
+                                                        }`}
+                                                >
+                                                    <i
+                                                        className={`fa-solid ${confirmFile === "Yes"
+                                                            ? "fa-circle-info"
+                                                            : "fa-circle-check"
+                                                            }`}
+                                                    ></i>
+
+                                                    {confirmFile === "No"
+                                                        ? "Means, Data directly go for Production"
+                                                        : "Means, Data need approval before production"}
+                                                </span>
+                                            </div>
+                                        )}
+
+                                        {confirmFileError && (
+                                            <div className="confirm-production-error-message">
+                                                <i className="fa-solid fa-circle-exclamation"></i>
+                                                Please select Yes or No for Confirm Production File.
+                                            </div>
+                                        )}
+
                                     </div>
                                 </div>
 
@@ -1421,330 +1490,392 @@ export default function GerberUpload() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             <div ref={footerRef}></div>
 
-            {showSCModal && (
-                <div className="jlc-panel-modal-overlay">
-                    <div className="jlc-panel-modal-container">
-                        <button
-                            type="button"
-                            className="jlc-panel-close-btn"
-                            onClick={() => setShowSCModal(false)}
-                        >
-                            ✕
-                        </button>
+            {/* Confirm Production File Modal */}
+            {
+                showConfirmProductionModal && (
+                    <div className="confirm-production-modal-overlay">
+                        <div className="confirm-production-modal">
 
-                        <div className="jlc-panel-modal-body">
-                            <div className="jlc-panel-form-section">
-                                <h5 className="jlc-panel-title">Panel by SC (Secure Circuit)</h5>
+                            <button
+                                type="button"
+                                className="confirm-production-close"
+                                onClick={() => setShowConfirmProductionModal(false)}
+                            >
+                                ✕
+                            </button>
 
-                                {/* Size (Single piece) */}
-                                <div className="jlc-form-row">
-                                    <label className="jlc-form-label">Size(Single piece)</label>
-                                    <div className="jlc-form-inputs">
-                                        <div className="jlc-input-group readonly">
-                                            <input type="text" value={pcbWidth || 100} readOnly />
-                                            <span className="jlc-unit-span">mm</span>
-                                        </div>
-                                        <span className="fw-bold text-muted">*</span>
-                                        <div className="jlc-input-group readonly">
-                                            <input type="text" value={pcbHeight || 100} readOnly />
-                                            <span className="jlc-unit-span">mm</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Panel Type */}
-                                <div className="jlc-form-row">
-                                    <label className="jlc-form-label">Panel Type</label>
-                                    <div className="jlc-form-inputs">
-                                        <div className="jlc-badge-btn">V-CUT</div>
-                                    </div>
-                                </div>
-
-                                {/* Panel Format (Column / Row) */}
-                                <div className="jlc-form-row">
-                                    <label className="jlc-form-label">Panel Format</label>
-                                    <div className="jlc-form-inputs">
-                                        <div className="w-50">
-                                            <small className="text-muted d-block mb-1">Column</small>
-                                            <div className="jlc-input-group">
-                                                <input
-                                                    type="number"
-                                                    value={panelCols}
-                                                    onChange={(e) => setPanelCols(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                                                    onBlur={() => {
-                                                        if (!panelCols || panelCols < 1) setPanelCols(1);
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                        <div className="w-50">
-                                            <small className="text-muted d-block mb-1">Row</small>
-                                            <div className="jlc-input-group">
-                                                <input
-                                                    type="number"
-                                                    value={panelRows}
-                                                    onChange={(e) => setPanelRows(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
-                                                    onBlur={() => {
-                                                        if (!panelRows || panelRows < 1) setPanelRows(1);
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Column Spacing / Row Spacing */}
-                                <div className="jlc-form-row">
-                                    <label className="jlc-form-label"></label>
-                                    <div className="jlc-form-inputs">
-                                        <div className="w-50">
-                                            <small className="text-muted d-block mb-1">Column Spacing</small>
-                                            <div className="jlc-input-group">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={colSpacing}
-                                                    onChange={(e) => setColSpacing(Math.max(0, parseFloat(e.target.value) || 0))}
-                                                />
-                                                <span className="jlc-unit-span">mm</span>
-                                            </div>
-                                        </div>
-                                        <div className="w-50">
-                                            <small className="text-muted d-block mb-1">Row Spacing</small>
-                                            <div className="jlc-input-group">
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    value={rowSpacing}
-                                                    onChange={(e) => setRowSpacing(Math.max(0, parseFloat(e.target.value) || 0))}
-                                                />
-                                                <span className="jlc-unit-span">mm</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-
-                                {/* Calculated Panel Size */}
-                                <div className="jlc-form-row">
-                                    <label className="jlc-form-label">Panel size</label>
-                                    <div className="jlc-form-inputs">
-                                        <div className="jlc-input-group readonly">
-                                            <input
-                                                type="text"
-                                                value={(Number(pcbWidth || 100) * panelCols).toFixed(0)}
-                                                readOnly
-                                            />
-                                            <span className="jlc-unit-span">mm</span>
-                                        </div>
-                                        <span className="fw-bold text-muted">*</span>
-                                        <div className="jlc-input-group readonly">
-                                            <input
-                                                type="text"
-                                                value={(Number(pcbHeight || 100) * panelRows).toFixed(0)}
-                                                readOnly
-                                            />
-                                            <span className="jlc-unit-span">mm</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="jlc-modal-footer">
-                                    <button
-                                        type="button"
-                                        className="jlc-btn-submit"
-                                        onClick={() => {
-                                            setPanelJLCPCBX(panelCols);
-                                            setPanelJLCPCBY(panelRows);
-                                            setShowSCModal(false);
-                                        }}
-                                    >
-                                        Submit
-                                    </button>
-                                    <button
-                                        type="button"
-                                        className="jlc-btn-cancel"
-                                        onClick={() => setShowSCModal(false)}
-                                    >
-                                        Cancel
-                                    </button>
-                                </div>
+                            <div className="confirm-production-icon">
+                                <i className="fa-solid fa-circle-info"></i>
                             </div>
 
-                            <div className="jlc-panel-preview-section">
-                                <div className="jlc-preview-tab-header d-flex bg-dark">
-                                    <button
-                                        type="button"
-                                        className={`jlc-preview-tab border-0 py-2 px-3 fw-bold ${activeModalTab === "outline" ? "bg-danger text-white" : "bg-dark text-white-50"}`}
-                                        onClick={() => setActiveModalTab("outline")}
-                                        style={{ fontSize: "13px", cursor: "pointer" }}
-                                    >
-                                        Board Outline
-                                    </button>
+                            <h5>Confirm Production File</h5>
 
-                                    {(gerberTopImg || gerberBottomImg) && (
+                            <p>
+                                Your Gerber file will <strong>not go directly to production</strong>.
+                                Our team will first review the design and other production-related
+                                details before manufacturing.
+                            </p>
+
+                            <p className="confirm-production-note">
+                                You will have an opportunity to review and approve the final
+                                production file before production starts.
+                            </p>
+
+                            <div className="confirm-production-actions">
+
+                                <button
+                                    type="button"
+                                    className="btn btn-light"
+                                    onClick={() => setShowConfirmProductionModal(false)}
+                                >
+                                    Cancel
+                                </button>
+
+                                <button
+                                    type="button"
+                                    className="btn btn-danger"
+                                    onClick={() => {
+                                        setConfirmFile("Yes");
+                                        setConfirmFileError(false);
+                                        setShowConfirmProductionModal(false);
+                                    }}
+                                >
+                                    Yes, Require Approval
+                                </button>
+
+                            </div>
+
+                        </div>
+                    </div>
+                )
+            }
+
+            {
+                showSCModal && (
+                    <div className="jlc-panel-modal-overlay">
+                        <div className="jlc-panel-modal-container">
+                            <button
+                                type="button"
+                                className="jlc-panel-close-btn"
+                                onClick={() => setShowSCModal(false)}
+                            >
+                                ✕
+                            </button>
+
+                            <div className="jlc-panel-modal-body">
+                                <div className="jlc-panel-form-section">
+                                    <h5 className="jlc-panel-title">Panel by SC (Secure Circuit)</h5>
+
+                                    {/* Size (Single piece) */}
+                                    <div className="jlc-form-row">
+                                        <label className="jlc-form-label">Size(Single piece)</label>
+                                        <div className="jlc-form-inputs">
+                                            <div className="jlc-input-group readonly">
+                                                <input type="text" value={pcbWidth || 100} readOnly />
+                                                <span className="jlc-unit-span">mm</span>
+                                            </div>
+                                            <span className="fw-bold text-muted">*</span>
+                                            <div className="jlc-input-group readonly">
+                                                <input type="text" value={pcbHeight || 100} readOnly />
+                                                <span className="jlc-unit-span">mm</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Panel Type */}
+                                    <div className="jlc-form-row">
+                                        <label className="jlc-form-label">Panel Type</label>
+                                        <div className="jlc-form-inputs">
+                                            <div className="jlc-badge-btn">V-CUT</div>
+                                        </div>
+                                    </div>
+
+                                    {/* Panel Format (Column / Row) */}
+                                    <div className="jlc-form-row">
+                                        <label className="jlc-form-label">Panel Format</label>
+                                        <div className="jlc-form-inputs">
+                                            <div className="w-50">
+                                                <small className="text-muted d-block mb-1">Column</small>
+                                                <div className="jlc-input-group">
+                                                    <input
+                                                        type="number"
+                                                        value={panelCols}
+                                                        onChange={(e) => setPanelCols(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
+                                                        onBlur={() => {
+                                                            if (!panelCols || panelCols < 1) setPanelCols(1);
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className="w-50">
+                                                <small className="text-muted d-block mb-1">Row</small>
+                                                <div className="jlc-input-group">
+                                                    <input
+                                                        type="number"
+                                                        value={panelRows}
+                                                        onChange={(e) => setPanelRows(e.target.value === '' ? '' : Math.max(1, parseInt(e.target.value) || 1))}
+                                                        onBlur={() => {
+                                                            if (!panelRows || panelRows < 1) setPanelRows(1);
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Column Spacing / Row Spacing */}
+                                    <div className="jlc-form-row">
+                                        <label className="jlc-form-label"></label>
+                                        <div className="jlc-form-inputs">
+                                            <div className="w-50">
+                                                <small className="text-muted d-block mb-1">Column Spacing</small>
+                                                <div className="jlc-input-group">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        value={colSpacing}
+                                                        onChange={(e) => setColSpacing(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                    />
+                                                    <span className="jlc-unit-span">mm</span>
+                                                </div>
+                                            </div>
+                                            <div className="w-50">
+                                                <small className="text-muted d-block mb-1">Row Spacing</small>
+                                                <div className="jlc-input-group">
+                                                    <input
+                                                        type="number"
+                                                        min="0"
+                                                        value={rowSpacing}
+                                                        onChange={(e) => setRowSpacing(Math.max(0, parseFloat(e.target.value) || 0))}
+                                                    />
+                                                    <span className="jlc-unit-span">mm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+
+                                    {/* Calculated Panel Size */}
+                                    <div className="jlc-form-row">
+                                        <label className="jlc-form-label">Panel size</label>
+                                        <div className="jlc-form-inputs">
+                                            <div className="jlc-input-group readonly">
+                                                <input
+                                                    type="text"
+                                                    value={(Number(pcbWidth || 100) * panelCols).toFixed(0)}
+                                                    readOnly
+                                                />
+                                                <span className="jlc-unit-span">mm</span>
+                                            </div>
+                                            <span className="fw-bold text-muted">*</span>
+                                            <div className="jlc-input-group readonly">
+                                                <input
+                                                    type="text"
+                                                    value={(Number(pcbHeight || 100) * panelRows).toFixed(0)}
+                                                    readOnly
+                                                />
+                                                <span className="jlc-unit-span">mm</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Action Buttons */}
+                                    <div className="jlc-modal-footer">
                                         <button
                                             type="button"
-                                            className={`jlc-preview-tab border-0 py-2 px-3 fw-bold ${activeModalTab === "preview" ? "bg-danger text-white" : "bg-dark text-white-50"}`}
-                                            onClick={() => setActiveModalTab("preview")}
-                                            style={{ fontSize: "13px", cursor: "pointer" }}
-                                        >
-                                            2D Preview
-                                        </button>
-                                    )}
-                                </div>
-
-                                {/* Canvas Content Area */}
-                                <div className="jlc-canvas-area d-flex align-items-center justify-content-center bg-black p-3 position-relative" style={{ minHeight: "350px" }}>
-                                    {/* TAB 1: Board Outline */}
-                                    {activeModalTab === "outline" && (
-                                        <div
-                                            className="jlc-board-outline-grid"
-                                            style={{
-                                                display: "grid",
-                                                gridTemplateColumns: `repeat(${panelCols}, 1fr)`,
-                                                gridTemplateRows: `repeat(${panelRows}, 1fr)`,
-                                                columnGap: `${Math.min(20, colSpacing * 2)}px`,
-                                                rowGap: `${Math.min(20, rowSpacing * 2)}px`,
-                                                width: `${Math.min(280, Math.max(120, panelCols * 45))}px`,
-                                                height: `${Math.min(280, Math.max(120, panelRows * 45))}px`,
-                                                border: "1px solid #d32f2f",
-                                                padding: "4px"
+                                            className="jlc-btn-submit"
+                                            onClick={() => {
+                                                setPanelJLCPCBX(panelCols);
+                                                setPanelJLCPCBY(panelRows);
+                                                setShowSCModal(false);
                                             }}
                                         >
-                                            {Array.from({ length: panelCols * panelRows }).map((_, index) => (
-                                                <div key={index} className="jlc-grid-cell" style={{ border: "1px dashed #d32f2f" }}></div>
-                                            ))}
-                                        </div>
-                                    )}
+                                            Submit
+                                        </button>
+                                        <button
+                                            type="button"
+                                            className="jlc-btn-cancel"
+                                            onClick={() => setShowSCModal(false)}
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                </div>
 
-                                    {activeModalTab === "preview" && (gerberTopImg || gerberBottomImg) && (
-                                        <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-between p-2 select-none">
-                                            {/* Toolbar Controls */}
-                                            <div className="d-flex justify-content-between align-items-center w-100 mb-2 px-2">
-                                                <div className="d-flex gap-2">
-                                                    <button
-                                                        type="button"
-                                                        className={`btn btn-sm ${previewSide === "top" ? "btn-danger" : "btn-outline-light"}`}
-                                                        onClick={() => setPreviewSide("top")}
-                                                        style={{ fontSize: "11px", padding: "2px 10px" }}
-                                                    >
-                                                        Top Layer
-                                                    </button>
-                                                    <button
-                                                        type="button"
-                                                        className={`btn btn-sm ${previewSide === "bottom" ? "btn-danger" : "btn-outline-light"}`}
-                                                        onClick={() => setPreviewSide("bottom")}
-                                                        style={{ fontSize: "11px", padding: "2px 10px" }}
-                                                    >
-                                                        Bottom Layer
-                                                    </button>
-                                                </div>
+                                <div className="jlc-panel-preview-section">
+                                    <div className="jlc-preview-tab-header d-flex bg-dark">
+                                        <button
+                                            type="button"
+                                            className={`jlc-preview-tab border-0 py-2 px-3 fw-bold ${activeModalTab === "outline" ? "bg-danger text-white" : "bg-dark text-white-50"}`}
+                                            onClick={() => setActiveModalTab("outline")}
+                                            style={{ fontSize: "13px", cursor: "pointer" }}
+                                        >
+                                            Board Outline
+                                        </button>
 
-                                                <div className="d-flex gap-1 align-items-center bg-secondary bg-opacity-25 rounded px-2 py-1">
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-dark py-0 px-2 text-white border-secondary"
-                                                        onClick={handleZoomOut}
-                                                        title="Zoom Out"
-                                                        style={{ fontSize: "12px", lineHeight: "1.5" }}
-                                                    >
-                                                        <i className="fa-solid fa-minus"></i>
-                                                    </button>
+                                        {(gerberTopImg || gerberBottomImg) && (
+                                            <button
+                                                type="button"
+                                                className={`jlc-preview-tab border-0 py-2 px-3 fw-bold ${activeModalTab === "preview" ? "bg-danger text-white" : "bg-dark text-white-50"}`}
+                                                onClick={() => setActiveModalTab("preview")}
+                                                style={{ fontSize: "13px", cursor: "pointer" }}
+                                            >
+                                                2D Preview
+                                            </button>
+                                        )}
+                                    </div>
 
-                                                    <span className="text-white-50 px-2 fw-semibold" style={{ fontSize: "11px", minWidth: "45px", textAlign: "center" }}>
-                                                        {Math.round(zoomScale * 100)}%
-                                                    </span>
-
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-dark py-0 px-2 text-white border-secondary"
-                                                        onClick={handleZoomIn}
-                                                        title="Zoom In"
-                                                        style={{ fontSize: "12px", lineHeight: "1.5" }}
-                                                    >
-                                                        <i className="fa-solid fa-plus"></i>
-                                                    </button>
-
-                                                    <button
-                                                        type="button"
-                                                        className="btn btn-sm btn-outline-light py-0 px-2 ms-1"
-                                                        onClick={handleResetZoomWithPos}
-                                                        title="Reset View"
-                                                        style={{ fontSize: "11px", lineHeight: "1.5" }}
-                                                    >
-                                                        Reset
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Dynamic Drag Canvas */}
+                                    {/* Canvas Content Area */}
+                                    <div className="jlc-canvas-area d-flex align-items-center justify-content-center bg-black p-3 position-relative" style={{ minHeight: "350px" }}>
+                                        {/* TAB 1: Board Outline */}
+                                        {activeModalTab === "outline" && (
                                             <div
-                                                className="w-100 d-flex align-items-center justify-content-center p-3 position-relative"
-                                                onWheel={handleWheelZoom}
-                                                onMouseDown={handleMouseDown}
-                                                onMouseMove={handleMouseMove}
-                                                onMouseUp={handleMouseUp}
-                                                onMouseLeave={handleMouseUp}
+                                                className="jlc-board-outline-grid"
                                                 style={{
-                                                    overflow: "hidden",
-                                                    maxHeight: "340px",
-                                                    minHeight: "280px",
-                                                    backgroundColor: "#080808",
-                                                    cursor: isDragging ? "grabbing" : "grab",
-                                                    userSelect: "none"
+                                                    display: "grid",
+                                                    gridTemplateColumns: `repeat(${panelCols}, 1fr)`,
+                                                    gridTemplateRows: `repeat(${panelRows}, 1fr)`,
+                                                    columnGap: `${Math.min(20, colSpacing * 2)}px`,
+                                                    rowGap: `${Math.min(20, rowSpacing * 2)}px`,
+                                                    width: `${Math.min(280, Math.max(120, panelCols * 45))}px`,
+                                                    height: `${Math.min(280, Math.max(120, panelRows * 45))}px`,
+                                                    border: "1px solid #d32f2f",
+                                                    padding: "4px"
                                                 }}
                                             >
+                                                {Array.from({ length: panelCols * panelRows }).map((_, index) => (
+                                                    <div key={index} className="jlc-grid-cell" style={{ border: "1px dashed #d32f2f" }}></div>
+                                                ))}
+                                            </div>
+                                        )}
+
+                                        {activeModalTab === "preview" && (gerberTopImg || gerberBottomImg) && (
+                                            <div className="w-100 h-100 d-flex flex-column align-items-center justify-content-between p-2 select-none">
+                                                {/* Toolbar Controls */}
+                                                <div className="d-flex justify-content-between align-items-center w-100 mb-2 px-2">
+                                                    <div className="d-flex gap-2">
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm ${previewSide === "top" ? "btn-danger" : "btn-outline-light"}`}
+                                                            onClick={() => setPreviewSide("top")}
+                                                            style={{ fontSize: "11px", padding: "2px 10px" }}
+                                                        >
+                                                            Top Layer
+                                                        </button>
+                                                        <button
+                                                            type="button"
+                                                            className={`btn btn-sm ${previewSide === "bottom" ? "btn-danger" : "btn-outline-light"}`}
+                                                            onClick={() => setPreviewSide("bottom")}
+                                                            style={{ fontSize: "11px", padding: "2px 10px" }}
+                                                        >
+                                                            Bottom Layer
+                                                        </button>
+                                                    </div>
+
+                                                    <div className="d-flex gap-1 align-items-center bg-secondary bg-opacity-25 rounded px-2 py-1">
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-dark py-0 px-2 text-white border-secondary"
+                                                            onClick={handleZoomOut}
+                                                            title="Zoom Out"
+                                                            style={{ fontSize: "12px", lineHeight: "1.5" }}
+                                                        >
+                                                            <i className="fa-solid fa-minus"></i>
+                                                        </button>
+
+                                                        <span className="text-white-50 px-2 fw-semibold" style={{ fontSize: "11px", minWidth: "45px", textAlign: "center" }}>
+                                                            {Math.round(zoomScale * 100)}%
+                                                        </span>
+
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-dark py-0 px-2 text-white border-secondary"
+                                                            onClick={handleZoomIn}
+                                                            title="Zoom In"
+                                                            style={{ fontSize: "12px", lineHeight: "1.5" }}
+                                                        >
+                                                            <i className="fa-solid fa-plus"></i>
+                                                        </button>
+
+                                                        <button
+                                                            type="button"
+                                                            className="btn btn-sm btn-outline-light py-0 px-2 ms-1"
+                                                            onClick={handleResetZoomWithPos}
+                                                            title="Reset View"
+                                                            style={{ fontSize: "11px", lineHeight: "1.5" }}
+                                                        >
+                                                            Reset
+                                                        </button>
+                                                    </div>
+                                                </div>
+
+                                                {/* Dynamic Drag Canvas */}
                                                 <div
+                                                    className="w-100 d-flex align-items-center justify-content-center p-3 position-relative"
+                                                    onWheel={handleWheelZoom}
+                                                    onMouseDown={handleMouseDown}
+                                                    onMouseMove={handleMouseMove}
+                                                    onMouseUp={handleMouseUp}
+                                                    onMouseLeave={handleMouseUp}
                                                     style={{
-                                                        display: "grid",
-                                                        gridTemplateColumns: `repeat(${panelCols}, 1fr)`,
-                                                        gridTemplateRows: `repeat(${panelRows}, 1fr)`,
-                                                        columnGap: `${Math.min(15, colSpacing * 1.5)}px`,
-                                                        rowGap: `${Math.min(15, rowSpacing * 1.5)}px`,
-                                                        padding: "8px",
-                                                        backgroundColor: "#050505",
-                                                        borderRadius: "4px",
-                                                        border: "1px solid #52915a",
-                                                        transform: `translate(${position.x}px, ${position.y}px) scale(${zoomScale}) ${previewSide === "bottom" ? "scaleX(-1)" : ""}`,
-                                                        transformOrigin: "center center",
-                                                        transition: isDragging ? "none" : "transform 0.1s ease-out"
+                                                        overflow: "hidden",
+                                                        maxHeight: "340px",
+                                                        minHeight: "280px",
+                                                        backgroundColor: "#080808",
+                                                        cursor: isDragging ? "grabbing" : "grab",
+                                                        userSelect: "none"
                                                     }}
                                                 >
-                                                    {Array.from({ length: panelCols * panelRows }).map((_, index) => (
-                                                        <img
-                                                            key={index}
-                                                            src={getColoredImageUrl(
-                                                                previewSide === "top" ? gerberTopImg : gerberBottomImg,
-                                                                pcbColor
-                                                            )}
-                                                            alt={`PCB Panel ${previewSide} ${index + 1}`}
-                                                            draggable="false"
-                                                            style={{
-                                                                width: "100%",
-                                                                height: "100%",
-                                                                objectFit: "contain",
-                                                                display: "block",
-                                                                pointerEvents: "none"
-                                                            }}
-                                                        />
-                                                    ))}
+                                                    <div
+                                                        style={{
+                                                            display: "grid",
+                                                            gridTemplateColumns: `repeat(${panelCols}, 1fr)`,
+                                                            gridTemplateRows: `repeat(${panelRows}, 1fr)`,
+                                                            columnGap: `${Math.min(15, colSpacing * 1.5)}px`,
+                                                            rowGap: `${Math.min(15, rowSpacing * 1.5)}px`,
+                                                            padding: "8px",
+                                                            backgroundColor: "#050505",
+                                                            borderRadius: "4px",
+                                                            border: "1px solid #52915a",
+                                                            transform: `translate(${position.x}px, ${position.y}px) scale(${zoomScale}) ${previewSide === "bottom" ? "scaleX(-1)" : ""}`,
+                                                            transformOrigin: "center center",
+                                                            transition: isDragging ? "none" : "transform 0.1s ease-out"
+                                                        }}
+                                                    >
+                                                        {Array.from({ length: panelCols * panelRows }).map((_, index) => (
+                                                            <img
+                                                                key={index}
+                                                                src={getColoredImageUrl(
+                                                                    previewSide === "top" ? gerberTopImg : gerberBottomImg,
+                                                                    pcbColor
+                                                                )}
+                                                                alt={`PCB Panel ${previewSide} ${index + 1}`}
+                                                                draggable="false"
+                                                                style={{
+                                                                    width: "100%",
+                                                                    height: "100%",
+                                                                    objectFit: "contain",
+                                                                    display: "block",
+                                                                    pointerEvents: "none"
+                                                                }}
+                                                            />
+                                                        ))}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
-                                    )}
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
         </>
     );
 }

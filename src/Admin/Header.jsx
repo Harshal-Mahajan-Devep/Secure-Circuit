@@ -14,19 +14,22 @@ function Header() {
   const admin = adminData ? JSON.parse(adminData) : null;
   const AdminId = admin?.staff_id;
 
-
   useEffect(() => {
-
     if (!adminData) {
       navigate("/backend");
+      return;
     }
 
     if (adminData && adminData !== "undefined") {
       setStaff(JSON.parse(adminData));
     }
 
-    getProfile();
+    // Always keep Light Mode
+    document.documentElement.setAttribute("data-theme", "light");
+    document.documentElement.setAttribute("data-bs-theme", "light");
+    localStorage.setItem("theme", "light");
 
+    getProfile();
   }, []);
 
   const handleLogout = () => {
@@ -35,7 +38,6 @@ function Header() {
   };
 
   const getProfile = async () => {
-
     try {
       const res = await axios.get(
         `${BASE_URL}admin/getdatawhere/tbl_staff/staff_id/${AdminId}`
@@ -49,25 +51,11 @@ function Header() {
     }
   };
 
-  const [theme, setTheme] = useState("light");
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-
-    setTheme(newTheme);
-
-    document.documentElement.setAttribute("data-theme", newTheme);
-    document.documentElement.setAttribute("data-bs-theme", newTheme);
-
-    localStorage.setItem("theme", newTheme);
-
-    window.dispatchEvent(new Event("themeChanged"));
-  };
-
   return (
     <>
       <nav className="navbar admin-navbar navbar-expand bg-white">
         <div className="container-fluid px-3 px-lg-4">
+
           <button
             className="sidebar-toggle"
             type="button"
@@ -79,16 +67,8 @@ function Header() {
           </button>
 
           <div className="navbar-actions ms-auto">
-            <button
-              className="icon-button theme-toggle"
-              type="button"
-              onClick={toggleTheme}
-            >
-              <i
-                className={`bi ${theme === "dark" ? "bi-sun" : "bi-moon-stars"
-                  }`}
-              ></i>
-            </button>
+
+            {/* Notifications */}
             <div className="dropdown">
               <button
                 className="icon-button"
@@ -100,31 +80,42 @@ function Header() {
                 <span className="notification-dot"></span>
                 <i className="bi bi-bell" aria-hidden="true"></i>
               </button>
+
               <div className="dropdown-menu dropdown-menu-end notification-menu">
                 <div className="dropdown-header fw-bold text-body">
                   Notifications
                 </div>
+
                 <a className="dropdown-item" href="users.html">
                   <span className="notification-title">
                     New user registered
                   </span>
-                  <span className="notification-time">4 minutes ago</span>
+                  <span className="notification-time">
+                    4 minutes ago
+                  </span>
                 </a>
+
                 <a className="dropdown-item" href="charts.html">
                   <span className="notification-title">
                     Revenue target reached
                   </span>
-                  <span className="notification-time">32 minutes ago</span>
+                  <span className="notification-time">
+                    32 minutes ago
+                  </span>
                 </a>
+
                 <a className="dropdown-item" href="settings.html">
                   <span className="notification-title">
                     Security review completed
                   </span>
-                  <span className="notification-time">1 hour ago</span>
+                  <span className="notification-time">
+                    1 hour ago
+                  </span>
                 </a>
               </div>
             </div>
 
+            {/* Profile */}
             <div className="dropdown">
               <button
                 className="profile-button dropdown-toggle"
@@ -136,43 +127,50 @@ function Header() {
                   className="avatar-img avatar-sm"
                   src={
                     staff?.staff_image
-                      ? `${BASE_URL}public/Uploads/${staff?.staff_image}`
+                      ? `${BASE_URL}public/Uploads/${staff.staff_image}`
                       : defaultProfile
                   }
-                  alt={staff?.staff_name}
+                  alt={staff?.staff_name || "Profile"}
                 />
 
                 <div className="d-flex flex-column text-center ms-2">
-
                   <span className="profile-name d-none d-sm-inline">
                     {staff?.staff_name?.slice(0, 10)}
                   </span>
 
-                  <span style={{ fontSize: "13px", marginTop: "-5px" }}>{profile?.role_name}</span>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      marginTop: "-5px",
+                    }}
+                  >
+                    {profile?.role_name}
+                  </span>
                 </div>
-
               </button>
+
               <ul className="dropdown-menu dropdown-menu-end">
                 <li>
                   <Link className="dropdown-item" to="/profile">
                     Profile
                   </Link>
                 </li>
-                {/* <li>
-                  <a className="dropdown-item" href="settings.html">
-                    Account settings
-                  </a>
-                </li> */}
+
                 <li>
                   <hr className="dropdown-divider" />
                 </li>
+
                 <li>
-                  <button className="dropdown-item" onClick={handleLogout}>
+                  <button
+                    className="dropdown-item"
+                    onClick={handleLogout}
+                  >
                     Sign Out
                   </button>
                 </li>
               </ul>
             </div>
+
           </div>
         </div>
       </nav>

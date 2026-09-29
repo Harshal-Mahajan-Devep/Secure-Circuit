@@ -13,11 +13,17 @@ function Header() {
 
     if (!supplierData) {
       navigate("/user-auth/login");
+      return;
     }
 
     if (supplierData && supplierData !== "undefined") {
       setSupp(JSON.parse(supplierData));
     }
+
+    // Always keep Light Mode
+    document.documentElement.setAttribute("data-theme", "light");
+    document.documentElement.setAttribute("data-bs-theme", "light");
+    localStorage.setItem("theme", "light");
   }, []);
 
   const handleLogout = () => {
@@ -25,25 +31,11 @@ function Header() {
     navigate("/user-auth/login");
   };
 
-  const [theme, setTheme] = useState("light");
-
-  const toggleTheme = () => {
-    const newTheme = theme === "light" ? "dark" : "light";
-
-    setTheme(newTheme);
-
-    document.documentElement.setAttribute("data-theme", newTheme);
-    document.documentElement.setAttribute("data-bs-theme", newTheme);
-
-    localStorage.setItem("theme", newTheme);
-
-    window.dispatchEvent(new Event("themeChanged"));
-  };
-
   return (
     <>
       <nav className="navbar admin-navbar navbar-expand bg-white">
         <div className="container-fluid px-3 px-lg-4">
+
           <button
             className="sidebar-toggle"
             type="button"
@@ -55,16 +47,8 @@ function Header() {
           </button>
 
           <div className="navbar-actions ms-auto">
-            <button
-              className="icon-button theme-toggle"
-              type="button"
-              onClick={toggleTheme}
-            >
-              <i
-                className={`bi ${theme === "dark" ? "bi-sun" : "bi-moon-stars"
-                  }`}
-              ></i>
-            </button>
+
+            {/* Notifications */}
             <div className="dropdown">
               <button
                 className="icon-button"
@@ -76,31 +60,42 @@ function Header() {
                 <span className="notification-dot"></span>
                 <i className="bi bi-bell" aria-hidden="true"></i>
               </button>
+
               <div className="dropdown-menu dropdown-menu-end notification-menu">
                 <div className="dropdown-header fw-bold text-body">
                   Notifications
                 </div>
+
                 <a className="dropdown-item" href="users.html">
                   <span className="notification-title">
                     New user registered
                   </span>
-                  <span className="notification-time">4 minutes ago</span>
+                  <span className="notification-time">
+                    4 minutes ago
+                  </span>
                 </a>
+
                 <a className="dropdown-item" href="charts.html">
                   <span className="notification-title">
                     Revenue target reached
                   </span>
-                  <span className="notification-time">32 minutes ago</span>
+                  <span className="notification-time">
+                    32 minutes ago
+                  </span>
                 </a>
+
                 <a className="dropdown-item" href="settings.html">
                   <span className="notification-title">
                     Security review completed
                   </span>
-                  <span className="notification-time">1 hour ago</span>
+                  <span className="notification-time">
+                    1 hour ago
+                  </span>
                 </a>
               </div>
             </div>
 
+            {/* Supplier Profile */}
             <div className="dropdown">
               <button
                 className="profile-button dropdown-toggle"
@@ -112,44 +107,53 @@ function Header() {
                   className="avatar-img avatar-sm"
                   src={
                     supp?.supp_image
-                      ? `${BASE_URL}public/Uploads/${supp?.supp_image}`
+                      ? `${BASE_URL} public / Uploads / ${supp.supp_image} `
                       : defaultProfile
                   }
-                  alt={supp?.supp_contact_person}
+                  alt={supp?.supp_contact_person || "Supplier"}
                 />
 
                 <div className="d-flex flex-column text-center ms-2">
-
                   <span className="profile-name d-none d-sm-inline">
                     {supp?.supp_contact_person?.slice(0, 10)}
                   </span>
 
-                  <span style={{ fontSize: "13px", marginTop: "-5px" }}>Supplier</span>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      marginTop: "-5px",
+                    }}
+                  >
+                    Supplier
+                  </span>
                 </div>
-
-
               </button>
+
               <ul className="dropdown-menu dropdown-menu-end">
                 <li>
-                  <Link className="dropdown-item" to="/user-auth/profile">
+                  <Link
+                    className="dropdown-item"
+                    to="/user-auth/profile"
+                  >
                     Profile
                   </Link>
                 </li>
-                {/* <li>
-                  <a className="dropdown-item" href="settings.html">
-                    Account settings
-                  </a>
-                </li> */}
+
                 <li>
                   <hr className="dropdown-divider" />
                 </li>
+
                 <li>
-                  <button className="dropdown-item" onClick={handleLogout}>
+                  <button
+                    className="dropdown-item"
+                    onClick={handleLogout}
+                  >
                     Sign Out
                   </button>
                 </li>
               </ul>
             </div>
+
           </div>
         </div>
       </nav>
