@@ -146,14 +146,15 @@ export default function Home() {
         description={seoConfig.user_home.description}
       />
 
-      <section className="hero-section" id="home">
+    <section className="hero-section" id="home">
         <div className="overlay"></div>
 
         <div className="container-fluid position-relative">
           <div className="row align-items-center px-lg-5 px-3">
-            <div className="col-12 col-lg-7 text-center text-lg-start hero-content">
+            
+            <div className="col-12 col-lg-8 text-center text-lg-start hero-content">
               <p className="sub-title" data-aos="fade-down" data-aos-delay="100">
-                Precision PCBs. Reliable Performance. Delivered On Time.
+                Precision  PCBs. Reliable Performance. Delivered On Time.
               </p>
 
               <h1 data-aos="fade-right" data-aos-delay="200" className="fs-1">
@@ -166,18 +167,30 @@ export default function Home() {
 
               <div className="hero-stats">
 
+        <div className="hero-stat">
+                  <div className="hero-icon">
+                    <Icons.BadgeCheck  size={30} strokeWidth={1} />
+                  </div>
+
+                  <div>
+                    <h3>20+</h3>
+                    <p>Years of Experience</p>
+                  </div>
+                </div>  
+
+
                 <div className="hero-stat">
                   <div className="hero-icon">
-                    <Icons.Users size={42} strokeWidth={1} />
+                    <Icons.Users size={30} strokeWidth={1} />
                   </div>
 
                   <div>
                     <h3>500+</h3>
-                    <p>Happy Customers</p>
+                    <p>Satisfied Customers</p>
                   </div>
                 </div>
 
-                <div className="hero-stat">
+                {/* <div className="hero-stat">
                   <div className="hero-icon">
                     <Icons.BadgeCheck size={42} strokeWidth={1} />
                   </div>
@@ -186,11 +199,11 @@ export default function Home() {
                     <h3>10+</h3>
                     <p>Years Experience</p>
                   </div>
-                </div>
+                </div> */}
 
                 <div className="hero-stat">
                   <div className="hero-icon">
-                    <Icons.Cpu size={42} strokeWidth={1} />
+                    <Icons.Cpu size={30} strokeWidth={1} />
                   </div>
 
                   <div>
@@ -201,12 +214,23 @@ export default function Home() {
 
                 <div className="hero-stat">
                   <div className="hero-icon">
-                    <Icons.Truck size={42} strokeWidth={1} />
+                    <Icons.Truck size={30} strokeWidth={1} />
                   </div>
 
                   <div>
                     <h3>99%</h3>
                     <p>On-Time Delivery</p>
+                  </div>
+                </div>
+
+                   <div className="hero-stat quick-response-stat">
+                  <div className="hero-icon">
+                    <Icons.Headphones  size={30} strokeWidth={1} />
+                  </div>
+
+                  <div>
+                    <h3>24/7</h3>
+                    <p>Quick Response Support</p>
                   </div>
                 </div>
 
@@ -458,7 +482,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-
 
       <section className="about-section py-5 bg-light" id="about-us">
         <div className="container">
@@ -984,8 +1007,8 @@ export default function Home() {
 
         </div>
       </section>
-
-      <section className="kay-fc-section">
+  
+  <section className="kay-fc-section" style={{    justifyContent: "center"}}>
         <div className="container-fluid px-0">
           <div className="kay-fc-wrapper">
             <div className="kay-fc-item">
