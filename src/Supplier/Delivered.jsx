@@ -53,7 +53,7 @@ function Delivered() {
           comment: values.comment,
         });
 
-        toast.danger("Delivered updated dangerfully");
+        toast.success("Delivered updated successfully");
 
         resetForm();
         closeDispatchModal();
@@ -72,13 +72,13 @@ function Delivered() {
           <div className="page-heading-copy">
             <span className="page-icon">
               <i
-                className="bi bi-check-circle text-danger"
+                className="bi bi-check-circle text-primary"
                 aria-hidden="true"
               ></i>
             </span>
 
             <div>
-              <p className="eyebrow mb-1 text-danger">All</p>
+              <p className="eyebrow mb-1 text-primary">All</p>
               <h1 className="h3 mb-1">Delivered</h1>
             </div>
           </div>
@@ -88,7 +88,7 @@ function Delivered() {
         <section className="panel">
           <div className="panel-header d-flex flex-wrap align-items-center justify-content-end gap-2">
             <button
-              className="btn btn-outline-danger"
+              className="btn btn-outline-primary"
               type="button"
               onClick={() =>
                 openDispatchModal({
@@ -124,7 +124,7 @@ function Delivered() {
                   <td className="text-center">
                     <button
                       type="button"
-                      className="btn btn-sm btn-outline-danger"
+                      className="btn btn-sm btn-outline-primary"
                       onClick={() =>
                         openDispatchModal({
                           id: 1,
@@ -173,7 +173,7 @@ function Delivered() {
             <div className="modal-dialog modal-dialog-centered">
               <div className="modal-content">
                 {/* ================= HEADER ================= */}
-                <div className="modal-header bg-danger text-white">
+                <div className="modal-header bg-primary text-white">
                   <div>
                     <h5 className="modal-title mb-1">
                       <i className="bi bi-check-circle me-2"></i>
@@ -261,10 +261,10 @@ function Delivered() {
                   </div>
 
                   {/* ================= FOOTER ================= */}
-                            <div className="modal-footer justify-content-between">
+                 <div className="modal-footer justify-content-between">
   <button
     type="button"
-    className="btn btn-danger"
+    className="btn btn-secondary"
     onClick={closeDispatchModal}
   >
     Close
@@ -272,7 +272,7 @@ function Delivered() {
 
   <button
     type="submit"
-    className="btn btn-outline-danger"
+    className="btn btn-outline-primary"
   >
     <i className="bi bi-check2-circle me-1"></i>
     Save

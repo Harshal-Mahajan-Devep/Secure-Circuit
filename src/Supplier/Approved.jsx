@@ -376,6 +376,7 @@ PAGE HEADING
                 ========================= */} 
 
                 <td> 
+                  
                   <button 
                     type="button" 
                     className="btn btn-outline-primary" 
@@ -515,7 +516,7 @@ PAGE HEADING
             <div className="design-modal-header"> 
               <div> 
                 <h4> 
-                  <i className="bi bi-truck me-2"></i> 
+                  {/* <i className="bi bi-truck me-2"></i>  */}
 
                   {selectedOrder.cart_confirm_production_file === 
                   "Yes" 
@@ -523,13 +524,13 @@ PAGE HEADING
                     : "Upload Design"} 
                 </h4> 
 
-                <div className="staff-name"> 
+                {/* <div className="staff-name"> 
                   Order Code:{" "} 
                   <strong> 
                     {selectedOrder.order_code || 
                       "N/A"} 
                   </strong> 
-                </div> 
+                </div>  */}
               </div> 
 
               <button 

@@ -50,6 +50,7 @@ import CustOrders from "./Customer/Orders";
 import CustDispatches from "./Customer/Dispatches";
 import CustQuotations from "./Customer/Quotations";
 import CustSaveqQuote from "./Customer/Saved";
+import CustDelivered from "./Customer/Delivered";
 
 
 /* ================= SUPPLIER ================= */
@@ -64,6 +65,7 @@ import SuppQuotations from "./Supplier/Quotations";
 import SuppDispatches from "./Supplier/Dispatches";
 import SuppProfile from "./Supplier/Profile";
 import SuppApproved from "./Supplier/Approved";
+import SuppDelivered from "./Supplier/Delivered";
 
 
 /* ================= ADMIN LAYOUT ================= */
@@ -165,6 +167,7 @@ function MainApp() {
           <Route path="/customer/quotations" element={<CustQuotations />} />
           <Route path="/customer/dispatches" element={<CustDispatches />} />
           <Route path="/customer/saved-cart" element={<CustSaveqQuote />} />
+          <Route path="/customer/delivered" element={<CustDelivered />} />
         </Route>
 
         {/* Supplier Login */}
@@ -180,6 +183,7 @@ function MainApp() {
           <Route path="/user-auth/approved" element={<SuppApproved />} />
           <Route path="/user-auth/quotations" element={<SuppQuotations />} />
           <Route path="/user-auth/dispatches" element={<SuppDispatches />} />
+          <Route path="/user-auth/delivered" element={<SuppDelivered />} />
         </Route>
       </Routes>
     </>

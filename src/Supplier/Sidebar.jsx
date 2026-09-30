@@ -24,6 +24,7 @@ function Sidebar() {
     quotations: 0,
     approved: 0,
     dispatches: 0,
+     delivered: 0,
   });
 
   useEffect(() => {
@@ -114,6 +115,7 @@ function Sidebar() {
         quotations: quotationData.length,
         approved: approvedCount,
         dispatches: 0,
+          delivered: 0,
       });
     } catch (error) {
       console.log("Count Fetch Error:", error);
@@ -133,6 +135,9 @@ function Sidebar() {
 
       case "dispatches":
         return counts.dispatches;
+
+    case "delivered":
+      return counts.delivered;
 
       default:
         return 0;
@@ -168,49 +173,52 @@ function Sidebar() {
           </Link>
         </div>
 
-        <nav className="sidebar-nav">
-          {loading ? (
-            Array.from({ length: 4 }).map((_, index) => (
-              <div className="sidebar-skeleton" key={index}>
-                <div className="sidebar-skeleton-icon"></div>
-                <div className="sidebar-skeleton-text"></div>
-                <div className="sidebar-skeleton-count"></div>
-              </div>
-            ))
-          ) : (menus
-            .filter((menu) => {
-              if (menu.menu_status != 1) return false;
+          <nav className="sidebar-nav">
+            {loading ? (
+              Array.from({ length: 4 }).map((_, index) => (
+                <div className="sidebar-skeleton" key={index}>
+                  <div className="sidebar-skeleton-icon"></div>
+                  <div className="sidebar-skeleton-text"></div>
+                  <div className="sidebar-skeleton-count"></div>
+                  
+                </div>
+              ))
+            ) : (menus
+              .filter((menu) => {
+                if (menu.menu_status != 1) return false;
 
-              // Admin la sarv menu
-              if (isSupplier) return true;
+                // Admin la sarv menu
+                if (isSupplier) return true;
+                  // Delivered menu_id = 8
+  if (Number(menu.menu_id) === 8) return true;
 
-              // Staff la assigned menu
-              return menuAccess.includes(String(menu.menu_id));
-            })
-            .sort((a, b) => Number(a.menu_order) - Number(b.menu_order))
-            .map((menu) => (
-              <NavLink
-                key={menu.menu_id}
-                to={`/user-auth/${menu.menu_routes}`}
-                className={({ isActive }) =>
-                  isActive ? "nav-link active-primary" : "nav-link"
-                }
-              >
-                <span className="nav-icon text-primary">
-                  <i className={menu.menu_icon}></i>
-                </span>
-
-                <span className="nav-text">{menu.menu_name}</span>
-
-                {menu.menu_routes !== "dashboard" && (
-                  <span className="ms-auto badge rounded-pill bg-primary">
-                    {getCardCount(menu.menu_routes)}
+                //  Staff la assigned menu
+                return menuAccess.includes(String(menu.menu_id));
+              })
+              .sort((a, b) => Number(a.menu_order) - Number(b.menu_order))
+              .map((menu) => (
+                <NavLink
+                  key={menu.menu_id}
+                  to={`/user-auth/${menu.menu_routes}`}
+                  className={({ isActive }) =>
+                    isActive ? "nav-link active-primary" : "nav-link"
+                  }
+                >
+                  <span className="nav-icon text-primary">
+                    <i className={menu.menu_icon}></i>
                   </span>
-                )}
-              </NavLink>
-            ))
-          )}
-        </nav>
+
+                  <span className="nav-text">{menu.menu_name}</span>
+
+                  {menu.menu_routes !== "dashboard" && (
+                    <span className="ms-auto badge rounded-pill bg-primary">
+                      {getCardCount(menu.menu_routes)}
+                    </span>
+                  )}
+                </NavLink>
+              ))
+            )}
+          </nav>
       </aside>
     </>
   );

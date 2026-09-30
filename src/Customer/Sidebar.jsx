@@ -22,6 +22,7 @@ function Sidebar() {
     orders: 0,
     quotations: 0,
     dispatches: 0,
+       delivered: 0,
   });
 
   useEffect(() => {
@@ -80,6 +81,7 @@ function Sidebar() {
         orders: orderRes?.data?.count || 0,
         quotations: quotationRes?.data?.data ? quotationRes.data.data.length : (quotationRes?.data?.count || 0),
         dispatches: 0,
+              delivered: 0,
       });
     } catch (error) {
       console.log(error);
@@ -96,6 +98,8 @@ function Sidebar() {
 
       case "dispatches":
         return counts.dispatches;
+          case "delivered":
+      return counts.delivered;
 
       default:
         return 0;
@@ -145,6 +149,10 @@ function Sidebar() {
           ) : (menus
             .filter((menu) => {
               if (menu.menu_status != 1) return false;
+
+                              // Delivered menu_id = 8
+  if (Number(menu.menu_id) === 8) return true;
+              
 
               return menuAccess.includes(String(menu.menu_id));
             })
